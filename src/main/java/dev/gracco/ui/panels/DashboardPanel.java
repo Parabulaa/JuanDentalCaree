@@ -13,6 +13,7 @@ import java.util.Map;
 import javax.swing.BorderFactory;
 import javax.swing.Box;
 import javax.swing.BoxLayout;
+import javax.swing.JButton;
 import javax.swing.JLabel;
 import javax.swing.JPanel;
 import javax.swing.JScrollPane;
@@ -174,10 +175,13 @@ public class DashboardPanel extends JPanel {
 
         header.add(textWrapper, BorderLayout.WEST);
 
-        // Date filter
+        // Date filter with calendar picker
         JPanel dateFilterPanel = new JPanel();
         dateFilterPanel.setLayout(new BoxLayout(dateFilterPanel, BoxLayout.X_AXIS));
         dateFilterPanel.setBackground(Theme.WHITE);
+
+        java.time.format.DateTimeFormatter displayFmt =
+                java.time.format.DateTimeFormatter.ofPattern("MM/dd/yyyy");
 
         JTextField dateFilterField = new JTextField(10);
         dateFilterField.setFont(Theme.getFont(FontType.REGULAR, 13f));
@@ -186,8 +190,30 @@ public class DashboardPanel extends JPanel {
         dateFilterField.setBorder(BorderFactory.createCompoundBorder(
                 BorderFactory.createLineBorder(Theme.SECONDARY, 1),
                 new javax.swing.border.EmptyBorder(6, 10, 6, 10)));
-        dateFilterField.setText(java.time.LocalDate.now()
-                .format(java.time.format.DateTimeFormatter.ofPattern("MM/dd/yyyy")));
+        dateFilterField.setText(java.time.LocalDate.now().format(displayFmt));
+
+        // Calendar icon button
+        JButton calBtn = new JButton("📅");
+        calBtn.setFont(new java.awt.Font("Segoe UI Emoji", java.awt.Font.PLAIN, 14));
+        calBtn.setContentAreaFilled(false);
+        calBtn.setBorderPainted(false);
+        calBtn.setFocusPainted(false);
+        calBtn.setCursor(new java.awt.Cursor(java.awt.Cursor.HAND_CURSOR));
+        calBtn.setPreferredSize(new Dimension(36, 36));
+        calBtn.setMaximumSize(new Dimension(36, 36));
+        calBtn.setToolTipText("Pick a date");
+        calBtn.addActionListener(e -> {
+            java.time.LocalDate current;
+            try {
+                current = java.time.LocalDate.parse(dateFilterField.getText().trim(), displayFmt);
+            } catch (Exception ex) {
+                current = java.time.LocalDate.now();
+            }
+            dev.gracco.ui.element.DatePickerPopup.show(dateFilterField, current, picked -> {
+                dateFilterField.setText(picked.format(displayFmt));
+                loadDashboardDataByDate(java.sql.Date.valueOf(picked));
+            });
+        });
 
         JRoundedButton filterBtn = new JRoundedButton("Filter", 10);
         filterBtn.setBackground(Theme.ACCENT);
@@ -202,30 +228,28 @@ public class DashboardPanel extends JPanel {
         });
         filterBtn.addActionListener(e -> {
             try {
-                java.time.LocalDate d = java.time.LocalDate.parse(dateFilterField.getText().trim(),
-                        java.time.format.DateTimeFormatter.ofPattern("MM/dd/yyyy"));
+                java.time.LocalDate d = java.time.LocalDate.parse(dateFilterField.getText().trim(), displayFmt);
                 loadDashboardDataByDate(java.sql.Date.valueOf(d));
             } catch (Exception ex) {
                 loadDashboardData();
             }
         });
 
-        JRoundedButton todayBtn = new JRoundedButton("Today", 10);
+        JRoundedButton todayBtn = new JRoundedButton("Today", 10, Theme.SECONDARY);
         todayBtn.setBackground(Theme.WHITE);
         todayBtn.setForeground(Theme.BLACK);
         todayBtn.setFocusPainted(false);
         todayBtn.setFont(Theme.getFont(FontType.SEMI_BOLD, 13));
-        todayBtn.setBorder(BorderFactory.createCompoundBorder(
-                BorderFactory.createLineBorder(Theme.SECONDARY, 1),
-                new javax.swing.border.EmptyBorder(8, 14, 8, 14)));
+        todayBtn.setBorder(new javax.swing.border.EmptyBorder(8, 14, 8, 14));
         todayBtn.setCursor(new java.awt.Cursor(java.awt.Cursor.HAND_CURSOR));
         todayBtn.addActionListener(e -> {
-            dateFilterField.setText(java.time.LocalDate.now()
-                    .format(java.time.format.DateTimeFormatter.ofPattern("MM/dd/yyyy")));
+            dateFilterField.setText(java.time.LocalDate.now().format(displayFmt));
             loadDashboardData();
         });
 
         dateFilterPanel.add(dateFilterField);
+        dateFilterPanel.add(Box.createHorizontalStrut(2));
+        dateFilterPanel.add(calBtn);
         dateFilterPanel.add(Box.createHorizontalStrut(6));
         dateFilterPanel.add(filterBtn);
         dateFilterPanel.add(Box.createHorizontalStrut(6));

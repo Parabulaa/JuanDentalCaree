@@ -238,26 +238,24 @@ public class PatientPanel extends JPanel {
         buttonWrapper.add(Box.createHorizontalStrut(10));
 
         if (Database.User.getRole() == Enums.Role.ADMIN) {
-            JRoundedButton exportButton = new JRoundedButton("Export CSV", 10);
+            JRoundedButton exportButton = new JRoundedButton("Export CSV", 10, Theme.SECONDARY);
             exportButton.setBackground(Theme.WHITE);
             exportButton.setForeground(Theme.BLACK);
             exportButton.setFocusPainted(false);
             exportButton.setFont(Theme.getFont(Theme.FontType.SEMI_BOLD, 14));
-            exportButton.setBorder(BorderFactory.createCompoundBorder(
-                    BorderFactory.createLineBorder(Theme.SECONDARY, 1), new EmptyBorder(10, 18, 10, 18)));
+            exportButton.setBorder(new EmptyBorder(10, 18, 10, 18));
             exportButton.setCursor(new Cursor(Cursor.HAND_CURSOR));
             exportButton.addActionListener(e -> ExportUtil.exportToCSV(table, "patients",
                     (JFrame) SwingUtilities.getWindowAncestor(this)));
             buttonWrapper.add(exportButton);
             buttonWrapper.add(Box.createHorizontalStrut(10));
 
-            JRoundedButton deactivatedBtn = new JRoundedButton("Deactivated", 10);
+            JRoundedButton deactivatedBtn = new JRoundedButton("Deactivated", 10, new Color(220, 80, 80));
             deactivatedBtn.setBackground(Theme.WHITE);
             deactivatedBtn.setForeground(new Color(180, 30, 30));
             deactivatedBtn.setFocusPainted(false);
             deactivatedBtn.setFont(Theme.getFont(Theme.FontType.SEMI_BOLD, 14));
-            deactivatedBtn.setBorder(BorderFactory.createCompoundBorder(
-                    BorderFactory.createLineBorder(new Color(220, 80, 80), 1), new EmptyBorder(10, 18, 10, 18)));
+            deactivatedBtn.setBorder(new EmptyBorder(10, 18, 10, 18));
             deactivatedBtn.setCursor(new Cursor(Cursor.HAND_CURSOR));
             deactivatedBtn.addActionListener(e -> DeactivatedPatientsScreen.open());
             buttonWrapper.add(deactivatedBtn);

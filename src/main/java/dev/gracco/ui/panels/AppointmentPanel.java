@@ -141,13 +141,12 @@ public class AppointmentPanel extends JPanel {
         buttonWrapper.add(refreshButton);
 
         if (Database.User.getRole() == Enums.Role.ADMIN) {
-            JRoundedButton exportButton = new JRoundedButton("Export CSV", 10);
+            JRoundedButton exportButton = new JRoundedButton("Export CSV", 10, Theme.SECONDARY);
             exportButton.setBackground(Theme.WHITE);
             exportButton.setForeground(Theme.BLACK);
             exportButton.setFocusPainted(false);
             exportButton.setFont(Theme.getFont(FontType.SEMI_BOLD, 14));
-            exportButton.setBorder(BorderFactory.createCompoundBorder(
-                    BorderFactory.createLineBorder(Theme.SECONDARY, 1), new EmptyBorder(10, 18, 10, 18)));
+            exportButton.setBorder(new EmptyBorder(10, 18, 10, 18));
             exportButton.setCursor(new Cursor(Cursor.HAND_CURSOR));
             exportButton.addActionListener(e -> ExportUtil.exportToCSV(table, "appointments",
                     (JFrame) SwingUtilities.getWindowAncestor(this)));
