@@ -243,7 +243,7 @@ public class AdminPanel extends JPanel {
 
         JTableHeader header = table.getTableHeader();
         header.setReorderingAllowed(false);
-        header.setResizingAllowed(true);
+        header.setResizingAllowed(false);
         header.setBackground(Theme.BACKGROUND_GREEN);
         header.setForeground(Theme.BLACK);
         header.setFont(Theme.getFont(FontType.MEDIUM, 14f));

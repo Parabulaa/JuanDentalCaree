@@ -24,8 +24,11 @@ import javax.swing.Box;
 import javax.swing.BoxLayout;
 import javax.swing.JComboBox;
 import javax.swing.JDialog;
+import javax.swing.JFrame;
 import javax.swing.JLabel;
+import javax.swing.JMenuItem;
 import javax.swing.JPanel;
+import javax.swing.JPopupMenu;
 import javax.swing.JScrollPane;
 import javax.swing.JTable;
 import javax.swing.JTextField;
@@ -42,13 +45,17 @@ import javax.swing.text.BadLocationException;
 import javax.swing.text.DocumentFilter;
 
 import dev.gracco.db.Database;
+import dev.gracco.db.Enums;
 import dev.gracco.ui.Theme;
 import dev.gracco.ui.Theme.FontType;
 import dev.gracco.ui.element.DashboardHeaderRenderer;
 import dev.gracco.ui.element.JRoundedButton;
 import dev.gracco.ui.element.RoundedPanel;
 import dev.gracco.ui.screen.AddPatientScreen;
+import dev.gracco.ui.screen.DeactivatedPatientsScreen;
 import dev.gracco.ui.screen.EditPatientScreen;
+import dev.gracco.ui.screen.PatientHistoryScreen;
+import dev.gracco.util.ExportUtil;
 
 public class PatientPanel extends JPanel {
     private static final int PAGE_SIZE = 10;
@@ -229,7 +236,39 @@ public class PatientPanel extends JPanel {
         buttonWrapper.add(Box.createHorizontalStrut(10));
         buttonWrapper.add(refreshButton);
         buttonWrapper.add(Box.createHorizontalStrut(10));
+
+        if (Database.User.getRole() == Enums.Role.ADMIN) {
+            JRoundedButton exportButton = new JRoundedButton("Export CSV", 10);
+            exportButton.setBackground(Theme.WHITE);
+            exportButton.setForeground(Theme.BLACK);
+            exportButton.setFocusPainted(false);
+            exportButton.setFont(Theme.getFont(Theme.FontType.SEMI_BOLD, 14));
+            exportButton.setBorder(BorderFactory.createCompoundBorder(
+                    BorderFactory.createLineBorder(Theme.SECONDARY, 1), new EmptyBorder(10, 18, 10, 18)));
+            exportButton.setCursor(new Cursor(Cursor.HAND_CURSOR));
+            exportButton.addActionListener(e -> ExportUtil.exportToCSV(table, "patients",
+                    (JFrame) SwingUtilities.getWindowAncestor(this)));
+            buttonWrapper.add(exportButton);
+            buttonWrapper.add(Box.createHorizontalStrut(10));
+
+            JRoundedButton deactivatedBtn = new JRoundedButton("Deactivated", 10);
+            deactivatedBtn.setBackground(Theme.WHITE);
+            deactivatedBtn.setForeground(new Color(180, 30, 30));
+            deactivatedBtn.setFocusPainted(false);
+            deactivatedBtn.setFont(Theme.getFont(Theme.FontType.SEMI_BOLD, 14));
+            deactivatedBtn.setBorder(BorderFactory.createCompoundBorder(
+                    BorderFactory.createLineBorder(new Color(220, 80, 80), 1), new EmptyBorder(10, 18, 10, 18)));
+            deactivatedBtn.setCursor(new Cursor(Cursor.HAND_CURSOR));
+            deactivatedBtn.addActionListener(e -> DeactivatedPatientsScreen.open());
+            buttonWrapper.add(deactivatedBtn);
+            buttonWrapper.add(Box.createHorizontalStrut(10));
+        }
+
         buttonWrapper.add(addButton);
+
+        if (Database.User.getRole() == Enums.Role.DENTIST) {
+            addButton.setVisible(false);
+        }
 
         header.add(title, BorderLayout.WEST);
         header.add(buttonWrapper, BorderLayout.EAST);
@@ -322,7 +361,19 @@ public class PatientPanel extends JPanel {
         buttonPanel.setBackground(Theme.WHITE);
         buttonPanel.setAlignmentX(Component.LEFT_ALIGNMENT);
 
+        JRoundedButton cancelButton = new JRoundedButton("Cancel", 10);
+        cancelButton.setBackground(Theme.WHITE);
+        cancelButton.setForeground(Theme.BLACK);
+        cancelButton.setFocusPainted(false);
+        cancelButton.setFont(Theme.getFont(FontType.SEMI_BOLD, 14));
+        cancelButton.setBorder(BorderFactory.createCompoundBorder(
+                BorderFactory.createLineBorder(Theme.SECONDARY, 1), new EmptyBorder(10, 18, 10, 18)));
+        cancelButton.setCursor(new Cursor(Cursor.HAND_CURSOR));
+        cancelButton.addActionListener(e -> searchPopup.setVisible(false));
+
         buttonPanel.add(Box.createHorizontalGlue());
+        buttonPanel.add(cancelButton);
+        buttonPanel.add(Box.createHorizontalStrut(10));
         buttonPanel.add(resetButton);
         buttonPanel.add(Box.createHorizontalStrut(10));
         buttonPanel.add(applyButton);
@@ -490,7 +541,7 @@ public class PatientPanel extends JPanel {
 
         JTableHeader header = table.getTableHeader();
         header.setReorderingAllowed(false);
-        header.setResizingAllowed(true);
+        header.setResizingAllowed(false);
         header.setBackground(Theme.BACKGROUND_GREEN);
         header.setForeground(Theme.BLACK);
         header.setFont(Theme.getFont(FontType.MEDIUM, 14f));
@@ -512,6 +563,51 @@ public class PatientPanel extends JPanel {
                     int patientId = (int) tableModel.getValueAt(modelRow, 0);
                     EditPatientScreen.open(patientId);
                 }
+            }
+            @Override public void mousePressed(MouseEvent e) { if (e.isPopupTrigger()) showMenu(e); }
+            @Override public void mouseReleased(MouseEvent e) { if (e.isPopupTrigger()) showMenu(e); }
+            private void showMenu(MouseEvent e) {
+                int row = table.rowAtPoint(e.getPoint());
+                if (row < 0) return;
+                table.setRowSelectionInterval(row, row);
+                int modelRow = table.convertRowIndexToModel(row);
+                int patientId = (int) tableModel.getValueAt(modelRow, 0);
+                String name = tableModel.getValueAt(modelRow, 1) + " " + tableModel.getValueAt(modelRow, 2);
+
+                JPopupMenu menu = new JPopupMenu();
+                JMenuItem historyItem = new JMenuItem("View Appointment History");
+                historyItem.setFont(Theme.getFont(FontType.REGULAR, 13f));
+                historyItem.addActionListener(_ -> PatientHistoryScreen.open(patientId, name));
+
+                menu.add(historyItem);
+
+                if (Database.User.getRole() != Enums.Role.DENTIST) {
+                    JMenuItem editItem = new JMenuItem("Edit Patient");
+                    editItem.setFont(Theme.getFont(FontType.REGULAR, 13f));
+                    editItem.addActionListener(_ -> EditPatientScreen.open(patientId));
+                    menu.add(editItem);
+                }
+
+                if (Database.User.getRole() == Enums.Role.ADMIN) {
+                    JMenuItem deactivateItem = new JMenuItem("Deactivate Patient");
+                    deactivateItem.setFont(Theme.getFont(FontType.REGULAR, 13f));
+                    deactivateItem.setForeground(new Color(180, 30, 30));
+                    deactivateItem.addActionListener(_ -> {
+                        boolean confirm = dev.gracco.ui.ConfirmDialog.show(
+                                (java.awt.Frame) SwingUtilities.getWindowAncestor(PatientPanel.this),
+                                "Deactivate " + name + "? They will no longer appear in the patient list.",
+                                "Deactivate Patient");
+                        if (confirm) {
+                            String first = tableModel.getValueAt(modelRow, 1).toString();
+                            String last = tableModel.getValueAt(modelRow, 2).toString();
+                            Database.Patient.deactivatePatient(patientId, first, last);
+                            loadPage(currentPage);
+                        }
+                    });
+                    menu.addSeparator();
+                    menu.add(deactivateItem);
+                }
+                menu.show(table, e.getX(), e.getY());
             }
         });
     }

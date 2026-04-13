@@ -1,24 +1,47 @@
 package dev.gracco.ui.screen;
 
+import java.awt.Color;
+import java.awt.Component;
+import java.awt.Cursor;
+import java.awt.Dimension;
+import java.awt.GridBagLayout;
+import java.awt.GridLayout;
+import java.awt.event.FocusAdapter;
+import java.awt.event.FocusEvent;
+import java.awt.event.MouseAdapter;
+import java.awt.event.MouseEvent;
+import java.awt.event.WindowAdapter;
+import java.awt.event.WindowEvent;
+import java.sql.Date;
+import java.time.LocalDate;
+import java.time.format.DateTimeFormatter;
+import java.time.format.ResolverStyle;
+
+import javax.swing.BorderFactory;
+import javax.swing.Box;
+import javax.swing.BoxLayout;
+import javax.swing.JComboBox;
+import javax.swing.JComponent;
+import javax.swing.JFrame;
+import javax.swing.JLabel;
+import javax.swing.JPanel;
+import javax.swing.JScrollPane;
+import javax.swing.JTextArea;
+import javax.swing.JTextField;
+import javax.swing.SwingConstants;
+import javax.swing.WindowConstants;
+import javax.swing.border.EmptyBorder;
+import javax.swing.text.AbstractDocument;
+import javax.swing.text.AttributeSet;
+import javax.swing.text.BadLocationException;
+import javax.swing.text.DocumentFilter;
+
 import dev.gracco.db.Database;
 import dev.gracco.db.Enums;
 import dev.gracco.ui.Alert;
 import dev.gracco.ui.Theme;
 import dev.gracco.ui.element.JRoundedButton;
 import dev.gracco.ui.element.JRoundedPanel;
-
-import javax.swing.*;
-import javax.swing.border.EmptyBorder;
-import javax.swing.text.AbstractDocument;
-import javax.swing.text.AttributeSet;
-import javax.swing.text.BadLocationException;
-import javax.swing.text.DocumentFilter;
-import java.awt.*;
-import java.awt.event.*;
-import java.sql.Date;
-import java.time.LocalDate;
-import java.time.format.DateTimeFormatter;
-import java.time.format.ResolverStyle;
 
 public class EditAppointmentScreen extends JFrame {
     private static EditAppointmentScreen instance;
@@ -46,7 +69,7 @@ public class EditAppointmentScreen extends JFrame {
 
         setTitle("Edit Appointment");
         setDefaultCloseOperation(WindowConstants.DISPOSE_ON_CLOSE);
-        setSize(760, 660);
+        setSize(760, 700);
         setLocationRelativeTo(null);
         setResizable(false);
 
@@ -61,7 +84,7 @@ public class EditAppointmentScreen extends JFrame {
         card.setBorder(new EmptyBorder(30, 30, 30, 30));
         card.setLayout(new BoxLayout(card, BoxLayout.Y_AXIS));
         card.setBackground(Theme.WHITE);
-        card.setPreferredSize(new Dimension(680, 580));
+        card.setPreferredSize(new Dimension(680, 620));
 
         Dimension fieldSize = new Dimension(270, 42);
 
@@ -163,6 +186,11 @@ public class EditAppointmentScreen extends JFrame {
             String status = (String) statusBox.getSelectedItem();
             String notes = notesArea.getText().trim();
 
+            if (Database.Appointment.isDuplicate(dId, Date.valueOf(parsedDate), timeText, appointmentId)) {
+                Alert.error("This dentist already has an appointment at that date and time.", this);
+                saveButton.setEnabled(true); return;
+            }
+
             String result = Database.Appointment.updateAppointment(appointmentId, pId, dId,
                     Date.valueOf(parsedDate), timeText, status, reason, notes);
 
@@ -172,11 +200,11 @@ public class EditAppointmentScreen extends JFrame {
             new javax.swing.Timer(3000, _ -> dispose()) {{ setRepeats(false); start(); }};
         });
 
-        JPanel formPanel = new JPanel(new GridLayout(4, 2, 20, 14));
+        JPanel formPanel = new JPanel(new GridLayout(3, 2, 20, 18));
         formPanel.setBackground(Theme.WHITE);
         formPanel.setAlignmentX(Component.CENTER_ALIGNMENT);
-        formPanel.setMaximumSize(new Dimension(600, 280));
-        formPanel.setPreferredSize(new Dimension(600, 280));
+        formPanel.setMaximumSize(new Dimension(600, 270));
+        formPanel.setPreferredSize(new Dimension(600, 270));
 
         formPanel.add(createFieldPanel("Patient", patientBox));
         formPanel.add(createFieldPanel("Dentist", dentistBox));
@@ -188,15 +216,15 @@ public class EditAppointmentScreen extends JFrame {
         JPanel notesRow = new JPanel(new GridLayout(1, 2, 20, 0));
         notesRow.setBackground(Theme.WHITE);
         notesRow.setAlignmentX(Component.CENTER_ALIGNMENT);
-        notesRow.setMaximumSize(new Dimension(600, 100));
-        notesRow.setPreferredSize(new Dimension(600, 100));
+        notesRow.setMaximumSize(new Dimension(600, 110));
+        notesRow.setPreferredSize(new Dimension(600, 110));
         notesRow.add(createFieldPanel("Notes / Dentist Comments", notesScroll));
         notesRow.add(createFieldPanel("", saveButton));
 
         card.add(title);
         card.add(Box.createVerticalStrut(20));
         card.add(formPanel);
-        card.add(Box.createVerticalStrut(14));
+        card.add(Box.createVerticalStrut(18));
         card.add(notesRow);
 
         root.add(card);

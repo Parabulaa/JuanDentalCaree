@@ -1,47 +1,24 @@
 package dev.gracco.ui.screen;
 
-import java.awt.Color;
-import java.awt.Component;
-import java.awt.Cursor;
-import java.awt.Dimension;
-import java.awt.GridBagLayout;
-import java.awt.GridLayout;
-import java.awt.event.FocusAdapter;
-import java.awt.event.FocusEvent;
-import java.awt.event.MouseAdapter;
-import java.awt.event.MouseEvent;
-import java.awt.event.WindowAdapter;
-import java.awt.event.WindowEvent;
-import java.sql.Date;
-import java.time.LocalDate;
-import java.time.format.DateTimeFormatter;
-import java.time.format.ResolverStyle;
-
-import javax.swing.BorderFactory;
-import javax.swing.Box;
-import javax.swing.BoxLayout;
-import javax.swing.JComboBox;
-import javax.swing.JComponent;
-import javax.swing.JFrame;
-import javax.swing.JLabel;
-import javax.swing.JPanel;
-import javax.swing.JScrollPane;
-import javax.swing.JTextArea;
-import javax.swing.JTextField;
-import javax.swing.SwingConstants;
-import javax.swing.WindowConstants;
-import javax.swing.border.EmptyBorder;
-import javax.swing.text.AbstractDocument;
-import javax.swing.text.AttributeSet;
-import javax.swing.text.BadLocationException;
-import javax.swing.text.DocumentFilter;
-
 import dev.gracco.db.Database;
 import dev.gracco.db.Enums;
 import dev.gracco.ui.Alert;
 import dev.gracco.ui.Theme;
 import dev.gracco.ui.element.JRoundedButton;
 import dev.gracco.ui.element.JRoundedPanel;
+
+import javax.swing.*;
+import javax.swing.border.EmptyBorder;
+import javax.swing.text.AbstractDocument;
+import javax.swing.text.AttributeSet;
+import javax.swing.text.BadLocationException;
+import javax.swing.text.DocumentFilter;
+import java.awt.*;
+import java.awt.event.*;
+import java.sql.Date;
+import java.time.LocalDate;
+import java.time.format.DateTimeFormatter;
+import java.time.format.ResolverStyle;
 
 public class AddAppointmentScreen extends JFrame {
     private static AddAppointmentScreen instance;
@@ -61,7 +38,7 @@ public class AddAppointmentScreen extends JFrame {
     private AddAppointmentScreen() {
         setTitle("Add Appointment");
         setDefaultCloseOperation(WindowConstants.DISPOSE_ON_CLOSE);
-        setSize(760, 640);
+        setSize(760, 620);
         setLocationRelativeTo(null);
         setResizable(false);
 
@@ -76,9 +53,9 @@ public class AddAppointmentScreen extends JFrame {
         card.setBorder(new EmptyBorder(30, 30, 30, 30));
         card.setLayout(new BoxLayout(card, BoxLayout.Y_AXIS));
         card.setBackground(Theme.WHITE);
-        card.setPreferredSize(new Dimension(680, 560));
+        card.setPreferredSize(new Dimension(680, 540));
 
-        Dimension fieldSize = new Dimension(270, 42);
+        Dimension fieldSize = new Dimension(250, 42);
 
         JLabel title = new JLabel("Add Appointment");
         title.setFont(Theme.getFont(Theme.FontType.MEDIUM, 24));
@@ -125,14 +102,25 @@ public class AddAppointmentScreen extends JFrame {
         notesArea.setWrapStyleWord(true);
         notesArea.setBorder(BorderFactory.createCompoundBorder(
                 BorderFactory.createLineBorder(Theme.SECONDARY, 1),
-                new EmptyBorder(8, 10, 8, 10)
-        ));
+                new EmptyBorder(8, 10, 8, 10)));
         JScrollPane notesScroll = new JScrollPane(notesArea);
         notesScroll.setBorder(BorderFactory.createLineBorder(Theme.SECONDARY, 1));
-        notesScroll.setMaximumSize(new Dimension(Integer.MAX_VALUE, 80));
-        notesScroll.setPreferredSize(new Dimension(270, 80));
 
-        JRoundedButton addButton = createPrimaryButton("Add Appointment", fieldSize);
+        JRoundedButton addButton = new JRoundedButton("Add Appointment", 10);
+        addButton.setMaximumSize(fieldSize);
+        addButton.setPreferredSize(fieldSize);
+        addButton.setMinimumSize(fieldSize);
+        addButton.setAlignmentX(Component.LEFT_ALIGNMENT);
+        addButton.setBackground(Theme.PRIMARY);
+        addButton.setForeground(Theme.WHITE);
+        addButton.setFocusPainted(false);
+        addButton.setFont(Theme.getFont(Theme.FontType.SEMI_BOLD, 15));
+        addButton.setBorder(new EmptyBorder(12, 20, 12, 20));
+        addButton.setCursor(new Cursor(Cursor.HAND_CURSOR));
+        addButton.addMouseListener(new MouseAdapter() {
+            public void mouseEntered(MouseEvent e) { addButton.setBackground(Theme.PRIMARY_HOVER); }
+            public void mouseExited(MouseEvent e) { addButton.setBackground(Theme.PRIMARY); }
+        });
 
         addButton.addActionListener(_ -> {
             addButton.setEnabled(false);
@@ -145,8 +133,7 @@ public class AddAppointmentScreen extends JFrame {
 
             if (dateText.isEmpty() || timeText.isEmpty() || reason.isEmpty()) {
                 Alert.error("Date, time, and reason are required.", this);
-                addButton.setEnabled(true);
-                return;
+                addButton.setEnabled(true); return;
             }
 
             LocalDate parsedDate;
@@ -155,14 +142,18 @@ public class AddAppointmentScreen extends JFrame {
 
             if (!timeText.matches("^([01]?\\d|2[0-3]):[0-5]\\d$")) {
                 Alert.error("Time must be in HH:MM format (e.g. 09:30).", this);
-                addButton.setEnabled(true);
-                return;
+                addButton.setEnabled(true); return;
             }
 
             int pId = patientIds[patientBox.getSelectedIndex()];
             int dId = dentistIds[dentistBox.getSelectedIndex()];
             String status = (String) statusBox.getSelectedItem();
             String notes = notesArea.getText().trim();
+
+            if (Database.Appointment.isDuplicate(dId, Date.valueOf(parsedDate), timeText, null)) {
+                Alert.error("This dentist already has an appointment at that date and time.", this);
+                addButton.setEnabled(true); return;
+            }
 
             String result = Database.Appointment.addAppointment(pId, dId, Date.valueOf(parsedDate),
                     timeText, status, reason, notes);
@@ -173,11 +164,12 @@ public class AddAppointmentScreen extends JFrame {
             new javax.swing.Timer(3000, _ -> dispose()) {{ setRepeats(false); start(); }};
         });
 
-        JPanel formPanel = new JPanel(new GridLayout(4, 2, 20, 14));
+        // 3-row 2-col grid for main fields (no notes)
+        JPanel formPanel = new JPanel(new GridLayout(3, 2, 20, 18));
         formPanel.setBackground(Theme.WHITE);
         formPanel.setAlignmentX(Component.CENTER_ALIGNMENT);
-        formPanel.setMaximumSize(new Dimension(600, 280));
-        formPanel.setPreferredSize(new Dimension(600, 280));
+        formPanel.setMaximumSize(new Dimension(560, 270));
+        formPanel.setPreferredSize(new Dimension(560, 270));
 
         formPanel.add(createFieldPanel("Patient", patientBox));
         formPanel.add(createFieldPanel("Dentist", dentistBox));
@@ -186,18 +178,19 @@ public class AddAppointmentScreen extends JFrame {
         formPanel.add(createFieldPanel("Status", statusBox));
         formPanel.add(createFieldPanel("Reason for Visit", reasonField));
 
+        // Notes + button row separately so notes gets proper height
         JPanel notesRow = new JPanel(new GridLayout(1, 2, 20, 0));
         notesRow.setBackground(Theme.WHITE);
         notesRow.setAlignmentX(Component.CENTER_ALIGNMENT);
-        notesRow.setMaximumSize(new Dimension(600, 100));
-        notesRow.setPreferredSize(new Dimension(600, 100));
+        notesRow.setMaximumSize(new Dimension(560, 110));
+        notesRow.setPreferredSize(new Dimension(560, 110));
         notesRow.add(createFieldPanel("Notes (optional)", notesScroll));
         notesRow.add(createFieldPanel("", addButton));
 
         card.add(title);
-        card.add(Box.createVerticalStrut(20));
+        card.add(Box.createVerticalStrut(24));
         card.add(formPanel);
-        card.add(Box.createVerticalStrut(14));
+        card.add(Box.createVerticalStrut(18));
         card.add(notesRow);
 
         root.add(card);
@@ -209,22 +202,28 @@ public class AddAppointmentScreen extends JFrame {
         JPanel panel = new JPanel();
         panel.setLayout(new BoxLayout(panel, BoxLayout.Y_AXIS));
         panel.setBackground(Theme.WHITE);
-        panel.setBorder(new EmptyBorder(0, 0, 4, 0));
+        panel.setBorder(new EmptyBorder(0, 0, 6, 0));
 
         if (!text.isBlank()) {
             JLabel label = new JLabel(text);
-            label.setFont(Theme.getFont(Theme.FontType.MEDIUM, 13));
+            label.setFont(Theme.getFont(Theme.FontType.MEDIUM, 14));
             label.setForeground(Theme.BLACK);
             label.setAlignmentX(Component.LEFT_ALIGNMENT);
             panel.add(label);
-            panel.add(Box.createVerticalStrut(4));
+            panel.add(Box.createVerticalStrut(6));
         } else {
-            panel.add(Box.createVerticalStrut(22));
+            panel.add(Box.createVerticalStrut(26));
         }
 
-        field.setMaximumSize(new Dimension(270, field instanceof JScrollPane ? 80 : 42));
-        field.setPreferredSize(new Dimension(270, field instanceof JScrollPane ? 80 : 42));
-        if (field instanceof JComponent jc) jc.setAlignmentX(Component.LEFT_ALIGNMENT);
+        field.setMaximumSize(new Dimension(250, field instanceof JScrollPane ? 80 : 42));
+        field.setPreferredSize(new Dimension(250, field instanceof JScrollPane ? 80 : 42));
+        field.setMinimumSize(new Dimension(250, field instanceof JScrollPane ? 80 : 42));
+
+        if (field instanceof JTextField tf) tf.setAlignmentX(Component.LEFT_ALIGNMENT);
+        else if (field instanceof JComboBox<?> cb) cb.setAlignmentX(Component.LEFT_ALIGNMENT);
+        else if (field instanceof JRoundedButton btn) btn.setAlignmentX(Component.LEFT_ALIGNMENT);
+        else if (field instanceof JScrollPane sp) sp.setAlignmentX(Component.LEFT_ALIGNMENT);
+
         panel.add(field);
         return panel;
     }
@@ -248,25 +247,8 @@ public class AddAppointmentScreen extends JFrame {
                 BorderFactory.createLineBorder(Theme.SECONDARY, 1), new EmptyBorder(4, 8, 4, 8)));
     }
 
-    private JRoundedButton createPrimaryButton(String text, Dimension size) {
-        JRoundedButton btn = new JRoundedButton(text, 10);
-        btn.setMaximumSize(size); btn.setPreferredSize(size); btn.setMinimumSize(size);
-        btn.setAlignmentX(Component.LEFT_ALIGNMENT);
-        btn.setBackground(Theme.PRIMARY); btn.setForeground(Theme.WHITE);
-        btn.setFocusPainted(false);
-        btn.setFont(Theme.getFont(Theme.FontType.SEMI_BOLD, 15));
-        btn.setBorder(new EmptyBorder(12, 20, 12, 20));
-        btn.setCursor(new Cursor(Cursor.HAND_CURSOR));
-        btn.addMouseListener(new MouseAdapter() {
-            public void mouseEntered(MouseEvent e) { btn.setBackground(Theme.PRIMARY_HOVER); }
-            public void mouseExited(MouseEvent e) { btn.setBackground(Theme.PRIMARY); }
-        });
-        return btn;
-    }
-
     private void installPlaceholder(JTextField field, String placeholder) {
-        field.setText(placeholder);
-        field.setForeground(Color.GRAY);
+        field.setText(placeholder); field.setForeground(Color.GRAY);
         field.addFocusListener(new FocusAdapter() {
             public void focusGained(FocusEvent e) {
                 if (field.getText().equals(placeholder) && field.getForeground().equals(Color.GRAY)) {
@@ -274,9 +256,7 @@ public class AddAppointmentScreen extends JFrame {
                 }
             }
             public void focusLost(FocusEvent e) {
-                if (field.getText().trim().isEmpty()) {
-                    field.setText(placeholder); field.setForeground(Color.GRAY);
-                }
+                if (field.getText().trim().isEmpty()) { field.setText(placeholder); field.setForeground(Color.GRAY); }
             }
         });
     }

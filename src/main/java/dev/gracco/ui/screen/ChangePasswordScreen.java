@@ -72,6 +72,32 @@ public class ChangePasswordScreen extends JFrame {
                 new EmptyBorder(10, 12, 10, 12)
         ));
 
+        JLabel strengthLabel = new JLabel(" ");
+        strengthLabel.setFont(Theme.getFont(Theme.FontType.REGULAR, 12));
+        strengthLabel.setAlignmentX(Component.CENTER_ALIGNMENT);
+
+        passwordField.getDocument().addDocumentListener(new javax.swing.event.DocumentListener() {
+            public void insertUpdate(javax.swing.event.DocumentEvent e) { update(); }
+            public void removeUpdate(javax.swing.event.DocumentEvent e) { update(); }
+            public void changedUpdate(javax.swing.event.DocumentEvent e) { update(); }
+            private void update() {
+                String pw = new String(passwordField.getPassword());
+                if (pw.isEmpty()) { strengthLabel.setText(" "); return; }
+                int score = 0;
+                if (pw.length() >= 8) score++;
+                if (pw.matches(".*[A-Z].*")) score++;
+                if (pw.matches(".*[0-9].*")) score++;
+                if (pw.matches(".*[^a-zA-Z0-9].*")) score++;
+                switch (score) {
+                    case 1 -> { strengthLabel.setText("Weak"); strengthLabel.setForeground(new java.awt.Color(200, 50, 50)); }
+                    case 2 -> { strengthLabel.setText("Fair"); strengthLabel.setForeground(new java.awt.Color(220, 140, 0)); }
+                    case 3 -> { strengthLabel.setText("Good"); strengthLabel.setForeground(new java.awt.Color(50, 150, 50)); }
+                    case 4 -> { strengthLabel.setText("Strong"); strengthLabel.setForeground(new java.awt.Color(30, 120, 30)); }
+                    default -> strengthLabel.setText(" ");
+                }
+            }
+        });
+
         JRoundedButton enterButton = new JRoundedButton("Enter", 10);
         enterButton.setMaximumSize(fieldSize);
         enterButton.setPreferredSize(fieldSize);
@@ -121,7 +147,9 @@ public class ChangePasswordScreen extends JFrame {
         card.add(passwordLabel);
         card.add(Box.createVerticalStrut(4));
         card.add(passwordField);
-        card.add(Box.createVerticalStrut(18));
+        card.add(Box.createVerticalStrut(4));
+        card.add(strengthLabel);
+        card.add(Box.createVerticalStrut(14));
         card.add(enterButton);
 
         root.add(card);

@@ -11,11 +11,13 @@ import java.util.List;
 import java.util.Map;
 
 import javax.swing.BorderFactory;
+import javax.swing.Box;
 import javax.swing.BoxLayout;
 import javax.swing.JLabel;
 import javax.swing.JPanel;
 import javax.swing.JScrollPane;
 import javax.swing.JTable;
+import javax.swing.JTextField;
 import javax.swing.RowSorter;
 import javax.swing.SortOrder;
 import javax.swing.event.MouseInputAdapter;
@@ -28,6 +30,7 @@ import dev.gracco.db.Database;
 import dev.gracco.ui.Theme;
 import dev.gracco.ui.Theme.FontType;
 import dev.gracco.ui.element.DashboardHeaderRenderer;
+import dev.gracco.ui.element.JRoundedButton;
 import dev.gracco.ui.element.RoundedPanel;
 
 public class DashboardPanel extends JPanel {
@@ -100,12 +103,20 @@ public class DashboardPanel extends JPanel {
         loadDashboardData();
     }
 
-    private void loadDashboardData() {
+    public void loadDashboardData() {
         int[] stats = Database.Appointment.getDashboardStats();
         updateDashboardData(stats[0], stats[1], stats[2], stats[3], stats[4], stats[5]);
         Object[][] todayRows = Database.Appointment.getTodayAppointments();
         tableModel.setRowCount(0);
         for (Object[] row : todayRows) tableModel.addRow(row);
+    }
+
+    public void loadDashboardDataByDate(java.sql.Date date) {
+        int[] stats = Database.Appointment.getDashboardStatsByDate(date);
+        updateDashboardData(stats[0], stats[1], stats[2], stats[3], stats[4], stats[5]);
+        Object[][] rows = Database.Appointment.getAppointmentsByDate(date);
+        tableModel.setRowCount(0);
+        for (Object[] row : rows) tableModel.addRow(row);
     }
 
     private JPanel createHeader() {
@@ -143,10 +154,84 @@ public class DashboardPanel extends JPanel {
         subline.add(name);
         subline.add(period);
 
+        JLabel dateTimeLabel = new JLabel();
+        dateTimeLabel.setFont(Theme.getFont(FontType.REGULAR, 13f));
+        dateTimeLabel.setForeground(new java.awt.Color(120, 120, 120));
+        dateTimeLabel.setAlignmentX(Component.LEFT_ALIGNMENT);
+
+        java.time.format.DateTimeFormatter dtFormatter =
+                java.time.format.DateTimeFormatter.ofPattern("EEEE, MMMM d, yyyy  h:mm:ss a");
+        Runnable updateTime = () -> dateTimeLabel.setText(
+                java.time.LocalDateTime.now().format(dtFormatter));
+        updateTime.run();
+        javax.swing.Timer clockTimer = new javax.swing.Timer(1000, _ -> updateTime.run());
+        clockTimer.start();
+
         textWrapper.add(title);
         textWrapper.add(subline);
+        textWrapper.add(Box.createVerticalStrut(4));
+        textWrapper.add(dateTimeLabel);
 
         header.add(textWrapper, BorderLayout.WEST);
+
+        // Date filter
+        JPanel dateFilterPanel = new JPanel();
+        dateFilterPanel.setLayout(new BoxLayout(dateFilterPanel, BoxLayout.X_AXIS));
+        dateFilterPanel.setBackground(Theme.WHITE);
+
+        JTextField dateFilterField = new JTextField(10);
+        dateFilterField.setFont(Theme.getFont(FontType.REGULAR, 13f));
+        dateFilterField.setMaximumSize(new Dimension(130, 36));
+        dateFilterField.setPreferredSize(new Dimension(130, 36));
+        dateFilterField.setBorder(BorderFactory.createCompoundBorder(
+                BorderFactory.createLineBorder(Theme.SECONDARY, 1),
+                new javax.swing.border.EmptyBorder(6, 10, 6, 10)));
+        dateFilterField.setText(java.time.LocalDate.now()
+                .format(java.time.format.DateTimeFormatter.ofPattern("MM/dd/yyyy")));
+
+        JRoundedButton filterBtn = new JRoundedButton("Filter", 10);
+        filterBtn.setBackground(Theme.ACCENT);
+        filterBtn.setForeground(Theme.WHITE);
+        filterBtn.setFocusPainted(false);
+        filterBtn.setFont(Theme.getFont(FontType.SEMI_BOLD, 13));
+        filterBtn.setBorder(new javax.swing.border.EmptyBorder(8, 14, 8, 14));
+        filterBtn.setCursor(new java.awt.Cursor(java.awt.Cursor.HAND_CURSOR));
+        filterBtn.addMouseListener(new java.awt.event.MouseAdapter() {
+            public void mouseEntered(java.awt.event.MouseEvent e) { filterBtn.setBackground(Theme.ACCENT_HOVER); }
+            public void mouseExited(java.awt.event.MouseEvent e) { filterBtn.setBackground(Theme.ACCENT); }
+        });
+        filterBtn.addActionListener(e -> {
+            try {
+                java.time.LocalDate d = java.time.LocalDate.parse(dateFilterField.getText().trim(),
+                        java.time.format.DateTimeFormatter.ofPattern("MM/dd/yyyy"));
+                loadDashboardDataByDate(java.sql.Date.valueOf(d));
+            } catch (Exception ex) {
+                loadDashboardData();
+            }
+        });
+
+        JRoundedButton todayBtn = new JRoundedButton("Today", 10);
+        todayBtn.setBackground(Theme.WHITE);
+        todayBtn.setForeground(Theme.BLACK);
+        todayBtn.setFocusPainted(false);
+        todayBtn.setFont(Theme.getFont(FontType.SEMI_BOLD, 13));
+        todayBtn.setBorder(BorderFactory.createCompoundBorder(
+                BorderFactory.createLineBorder(Theme.SECONDARY, 1),
+                new javax.swing.border.EmptyBorder(8, 14, 8, 14)));
+        todayBtn.setCursor(new java.awt.Cursor(java.awt.Cursor.HAND_CURSOR));
+        todayBtn.addActionListener(e -> {
+            dateFilterField.setText(java.time.LocalDate.now()
+                    .format(java.time.format.DateTimeFormatter.ofPattern("MM/dd/yyyy")));
+            loadDashboardData();
+        });
+
+        dateFilterPanel.add(dateFilterField);
+        dateFilterPanel.add(Box.createHorizontalStrut(6));
+        dateFilterPanel.add(filterBtn);
+        dateFilterPanel.add(Box.createHorizontalStrut(6));
+        dateFilterPanel.add(todayBtn);
+
+        header.add(dateFilterPanel, BorderLayout.EAST);
 
         return header;
     }
@@ -224,7 +309,7 @@ public class DashboardPanel extends JPanel {
 
         JTableHeader header = table.getTableHeader();
         header.setReorderingAllowed(false);
-        header.setResizingAllowed(true);
+        header.setResizingAllowed(false);
         header.setBackground(Theme.BACKGROUND_GREEN);
         header.setForeground(Theme.BLACK);
         header.setFont(Theme.getFont(FontType.MEDIUM, 14f));
@@ -296,7 +381,25 @@ public class DashboardPanel extends JPanel {
         titleLabel.setForeground(Theme.BLACK);
         titleLabel.setFont(Theme.getFont(FontType.MEDIUM, 16f));
 
-        tableCard.add(titleLabel, BorderLayout.NORTH);
+        JRoundedButton refreshButton = new JRoundedButton("Refresh", 10);
+        refreshButton.setBackground(Theme.ACCENT);
+        refreshButton.setForeground(Theme.WHITE);
+        refreshButton.setFocusPainted(false);
+        refreshButton.setFont(Theme.getFont(FontType.SEMI_BOLD, 14));
+        refreshButton.setBorder(new javax.swing.border.EmptyBorder(10, 18, 10, 18));
+        refreshButton.setCursor(new java.awt.Cursor(java.awt.Cursor.HAND_CURSOR));
+        refreshButton.addMouseListener(new java.awt.event.MouseAdapter() {
+            public void mouseEntered(java.awt.event.MouseEvent e) { refreshButton.setBackground(Theme.ACCENT_HOVER); }
+            public void mouseExited(java.awt.event.MouseEvent e) { refreshButton.setBackground(Theme.ACCENT); }
+        });
+        refreshButton.addActionListener(e -> loadDashboardData());
+
+        JPanel cardHeader = new JPanel(new BorderLayout());
+        cardHeader.setBackground(Theme.WHITE);
+        cardHeader.add(titleLabel, BorderLayout.WEST);
+        cardHeader.add(refreshButton, BorderLayout.EAST);
+
+        tableCard.add(cardHeader, BorderLayout.NORTH);
         tableCard.add(scrollPane, BorderLayout.CENTER);
 
         return tableCard;

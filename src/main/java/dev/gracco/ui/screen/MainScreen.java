@@ -1,10 +1,13 @@
 package dev.gracco.ui.screen;
 
+import java.awt.AWTEvent;
 import java.awt.BorderLayout;
 import java.awt.CardLayout;
+import java.awt.Color;
 import java.awt.Component;
 import java.awt.Cursor;
 import java.awt.Dimension;
+import java.awt.Toolkit;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
 
@@ -13,6 +16,7 @@ import javax.swing.Box;
 import javax.swing.BoxLayout;
 import javax.swing.Icon;
 import javax.swing.JButton;
+import javax.swing.JFileChooser;
 import javax.swing.JFrame;
 import javax.swing.JLabel;
 import javax.swing.JOptionPane;
@@ -24,12 +28,15 @@ import javax.swing.Timer;
 import dev.gracco.Main;
 import dev.gracco.db.Database;
 import dev.gracco.db.Enums;
+import dev.gracco.ui.ConfirmDialog;
 import dev.gracco.ui.Theme;
 import dev.gracco.ui.panels.AdminPanel;
 import dev.gracco.ui.panels.AppointmentPanel;
 import dev.gracco.ui.panels.DashboardPanel;
 import dev.gracco.ui.panels.LogsPanel;
 import dev.gracco.ui.panels.PatientPanel;
+import dev.gracco.ui.screen.LoginScreen;
+import dev.gracco.ui.screen.ProfilePictureScreen;
 
 public class MainScreen extends JFrame {
     private static final int EXPANDED_SIDEBAR_WIDTH = 320;
@@ -50,6 +57,8 @@ public class MainScreen extends JFrame {
     private JButton adminButton;
     private JButton logsButton;
 
+    private DashboardPanel dashboardPanel;
+
     private boolean sidebarExpanded = true;
     private String selectedPanel = "Dashboard";
 
@@ -60,7 +69,16 @@ public class MainScreen extends JFrame {
 
     public MainScreen() {
         setTitle(Main.getName());
-        setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+        setDefaultCloseOperation(JFrame.DO_NOTHING_ON_CLOSE);
+        addWindowListener(new java.awt.event.WindowAdapter() {
+            @Override
+            public void windowClosing(java.awt.event.WindowEvent e) {
+                if (ConfirmDialog.show(MainScreen.this, "Are you sure you want to exit?", "Exit")) {
+                    Database.shutdown();
+                    System.exit(0);
+                }
+            }
+        });
         setMinimumSize(new Dimension(MIN_WINDOW_WIDTH, MIN_WINDOW_HEIGHT));
         setSize(1280, 720);
         setLocationRelativeTo(null);
@@ -132,32 +150,125 @@ public class MainScreen extends JFrame {
         sidebar.add(sidebarTop, BorderLayout.NORTH);
         sidebar.add(sidebarCenter, BorderLayout.CENTER);
 
-        // Logout button at the bottom of sidebar
-        JPanel sidebarBottom = new JPanel();
+        // Profile picture + user info at bottom of sidebar
+        JPanel sidebarBottom = new JPanel(new BorderLayout());
         sidebarBottom.setBackground(Theme.WHITE);
-        sidebarBottom.setLayout(new BoxLayout(sidebarBottom, BoxLayout.Y_AXIS));
-        sidebarBottom.setBorder(BorderFactory.createEmptyBorder(8, 8, 16, 8));
 
-        JButton logoutButton = createSidebarButton("Logout");
-        logoutButton.setBackground(new java.awt.Color(252, 238, 238));
-        logoutButton.setForeground(new java.awt.Color(180, 30, 30));
+        // Avatar panel
+        JPanel avatarPanel = new JPanel(new BorderLayout(10, 0));
+        avatarPanel.setBackground(Theme.WHITE);
+        avatarPanel.setBorder(BorderFactory.createEmptyBorder(8, 14, 8, 14));
+        avatarPanel.setMaximumSize(new Dimension(Integer.MAX_VALUE, 64));
+        avatarPanel.setCursor(new Cursor(Cursor.HAND_CURSOR));
+
+        // Circular avatar label
+        JLabel avatarLabel = new JLabel() {
+            @Override protected void paintComponent(java.awt.Graphics g) {
+                java.awt.Graphics2D g2 = (java.awt.Graphics2D) g.create();
+                g2.setRenderingHint(java.awt.RenderingHints.KEY_ANTIALIASING,
+                        java.awt.RenderingHints.VALUE_ANTIALIAS_ON);
+                g2.setColor(Theme.SECONDARY);
+                g2.fillOval(0, 0, getWidth(), getHeight());
+                if (getIcon() instanceof javax.swing.ImageIcon icon) {
+                    java.awt.image.BufferedImage img = new java.awt.image.BufferedImage(
+                            getWidth(), getHeight(), java.awt.image.BufferedImage.TYPE_INT_ARGB);
+                    java.awt.Graphics2D ig = img.createGraphics();
+                    ig.setRenderingHint(java.awt.RenderingHints.KEY_ANTIALIASING,
+                            java.awt.RenderingHints.VALUE_ANTIALIAS_ON);
+                    ig.setClip(new java.awt.geom.Ellipse2D.Float(0, 0, getWidth(), getHeight()));
+                    ig.drawImage(icon.getImage(), 0, 0, getWidth(), getHeight(), null);
+                    ig.dispose();
+                    g2.drawImage(img, 0, 0, null);
+                } else {
+                    g2.setColor(Theme.WHITE);
+                    g2.setFont(Theme.getFont(Theme.FontType.SEMI_BOLD, 18f));
+                    java.awt.FontMetrics fm = g2.getFontMetrics();
+                    String initials = Database.User.getFirstName().isEmpty() ? "?" :
+                            String.valueOf(Database.User.getFirstName().charAt(0)).toUpperCase();
+                    int x = (getWidth() - fm.stringWidth(initials)) / 2;
+                    int y = (getHeight() - fm.getHeight()) / 2 + fm.getAscent();
+                    g2.drawString(initials, x, y);
+                }
+                g2.dispose();
+            }
+        };
+        avatarLabel.setPreferredSize(new Dimension(40, 40));
+        avatarLabel.setMinimumSize(new Dimension(40, 40));
+        avatarLabel.setMaximumSize(new Dimension(40, 40));
+
+        // Load existing profile pic
+        String picPath = Database.User.getProfilePicture();
+        if (picPath != null && !picPath.isBlank()) {
+            try {
+                java.awt.Image img = new javax.swing.ImageIcon(picPath).getImage()
+                        .getScaledInstance(40, 40, java.awt.Image.SCALE_SMOOTH);
+                avatarLabel.setIcon(new javax.swing.ImageIcon(img));
+            } catch (Exception ignored) {}
+        }
+
+        JPanel userInfo = new JPanel();
+        userInfo.setLayout(new BoxLayout(userInfo, BoxLayout.Y_AXIS));
+        userInfo.setBackground(Theme.WHITE);
+
+        JLabel nameLabel = new JLabel(Database.User.getFirstName() + " " + Database.User.getLastName());
+        nameLabel.setFont(Theme.getFont(Theme.FontType.MEDIUM, 13f));
+        nameLabel.setForeground(Theme.BLACK);
+
+        JLabel roleLabel = new JLabel(Database.User.getRole().toString());
+        roleLabel.setFont(Theme.getFont(Theme.FontType.REGULAR, 12f));
+        roleLabel.setForeground(Color.GRAY);
+
+        userInfo.add(nameLabel);
+        userInfo.add(roleLabel);
+
+        avatarPanel.add(avatarLabel, BorderLayout.WEST);
+        avatarPanel.add(userInfo, BorderLayout.CENTER);
+
+        // Click avatar to change picture
+        avatarPanel.addMouseListener(new MouseAdapter() {
+            @Override public void mouseClicked(MouseEvent e) {
+                ProfilePictureScreen.open(Database.User.getProfilePicture(), () -> {
+                    String newPath = Database.User.getProfilePicture();
+                    if (newPath != null && !newPath.isBlank()) {
+                        try {
+                            java.awt.Image img = new javax.swing.ImageIcon(newPath).getImage()
+                                    .getScaledInstance(40, 40, java.awt.Image.SCALE_SMOOTH);
+                            avatarLabel.setIcon(new javax.swing.ImageIcon(img));
+                        } catch (Exception ignored) {
+                            avatarLabel.setIcon(null);
+                        }
+                    } else {
+                        avatarLabel.setIcon(null);
+                    }
+                    avatarLabel.repaint();
+                });
+            }
+            @Override public void mouseEntered(MouseEvent e) { avatarPanel.setBackground(Theme.HIGHLIGHT); userInfo.setBackground(Theme.HIGHLIGHT); }
+            @Override public void mouseExited(MouseEvent e) { avatarPanel.setBackground(Theme.WHITE); userInfo.setBackground(Theme.WHITE); }
+        });
+
+        JButton logoutButton = new JButton("Logout");
+        logoutButton.setMaximumSize(new Dimension(Integer.MAX_VALUE, 48));
+        logoutButton.setPreferredSize(new Dimension(Integer.MAX_VALUE, 48));
+        logoutButton.setMinimumSize(new Dimension(0, 48));
+        logoutButton.setAlignmentX(Component.LEFT_ALIGNMENT);
+        logoutButton.setHorizontalAlignment(SwingConstants.LEFT);
+        logoutButton.setFocusPainted(false);
+        logoutButton.setContentAreaFilled(false);
+        logoutButton.setOpaque(true);
+        logoutButton.setBackground(Theme.WHITE);
+        logoutButton.setForeground(new Color(180, 30, 30));
+        logoutButton.setFont(Theme.getFont(Theme.FontType.MEDIUM, 15));
+        logoutButton.setCursor(new Cursor(Cursor.HAND_CURSOR));
         logoutButton.setBorder(BorderFactory.createCompoundBorder(
-                BorderFactory.createMatteBorder(0, 4, 0, 0, new java.awt.Color(220, 80, 80)),
-                BorderFactory.createEmptyBorder(0, 18, 0, 18)
-        ));
+                BorderFactory.createMatteBorder(1, 0, 0, 0, Theme.SECONDARY),
+                BorderFactory.createEmptyBorder(0, 18, 0, 18)));
         logoutButton.addMouseListener(new MouseAdapter() {
-            @Override public void mouseEntered(MouseEvent e) {
-                logoutButton.setBackground(new java.awt.Color(248, 215, 215));
-            }
-            @Override public void mouseExited(MouseEvent e) {
-                logoutButton.setBackground(new java.awt.Color(252, 238, 238));
-            }
+            @Override public void mouseEntered(MouseEvent e) { logoutButton.setBackground(new Color(255, 240, 240)); }
+            @Override public void mouseExited(MouseEvent e) { logoutButton.setBackground(Theme.WHITE); }
         });
         logoutButton.addActionListener(_ -> {
-            int confirm = JOptionPane.showConfirmDialog(this,
-                    "Are you sure you want to log out?", "Logout",
-                    JOptionPane.YES_NO_OPTION, JOptionPane.QUESTION_MESSAGE);
-            if (confirm == JOptionPane.YES_OPTION) {
+            if (ConfirmDialog.show(this, "Are you sure you want to log out?", "Logout")) {
                 Database.shutdown();
                 Database.initialize();
                 dispose();
@@ -165,7 +276,8 @@ public class MainScreen extends JFrame {
             }
         });
 
-        sidebarBottom.add(logoutButton);
+        sidebarBottom.add(avatarPanel, BorderLayout.CENTER);
+        sidebarBottom.add(logoutButton, BorderLayout.SOUTH);
         sidebar.add(sidebarBottom, BorderLayout.SOUTH);
 
         cardLayout = new CardLayout();
@@ -173,7 +285,8 @@ public class MainScreen extends JFrame {
         contentPanel.setBackground(Theme.BACKGROUND_GREEN);
         contentPanel.setBorder(BorderFactory.createEmptyBorder(20, 20, 20, 20));
 
-        contentPanel.add(new DashboardPanel(), "Dashboard");
+        dashboardPanel = new DashboardPanel();
+        contentPanel.add(dashboardPanel, "Dashboard");
         contentPanel.add(new AppointmentPanel(), "Appointments");
         contentPanel.add(new PatientPanel(), "Patients");
 
@@ -186,6 +299,26 @@ public class MainScreen extends JFrame {
         add(contentPanel, BorderLayout.CENTER);
 
         showPanel("Dashboard");
+
+        // Session timeout — auto logout after 15 minutes of inactivity
+        final int TIMEOUT_MS = 15 * 60 * 1000;
+        final Timer[] sessionTimer = {new Timer(TIMEOUT_MS, _ -> {
+            Database.shutdown();
+            Database.initialize();
+            dispose();
+            SwingUtilities.invokeLater(() -> {
+                JOptionPane.showMessageDialog(null,
+                        "You have been logged out due to inactivity.", "Session Expired",
+                        JOptionPane.INFORMATION_MESSAGE);
+                new LoginScreen();
+            });
+        })};
+        sessionTimer[0].setRepeats(false);
+        sessionTimer[0].start();
+
+        Toolkit.getDefaultToolkit().addAWTEventListener(event -> {
+            sessionTimer[0].restart();
+        }, AWTEvent.MOUSE_EVENT_MASK | AWTEvent.KEY_EVENT_MASK);
 
         setVisible(true);
     }
@@ -228,6 +361,9 @@ public class MainScreen extends JFrame {
         selectedPanel = panelName;
         cardLayout.show(contentPanel, panelName);
         updateSidebarSelection();
+        if (panelName.equals("Dashboard")) {
+            dashboardPanel.loadDashboardData();
+        }
     }
 
     private void updateSidebarSelection() {

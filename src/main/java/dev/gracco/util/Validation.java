@@ -29,4 +29,14 @@ public class Validation {
         }
         return date.toLocalDate().format(java.time.format.DateTimeFormatter.ofPattern("MMMM d, uuuu"));
     }
+
+    public static String formatTime(String time) {
+        if (time == null || time.isBlank()) return "";
+        try {
+            java.time.LocalTime lt = java.time.LocalTime.parse(time);
+            return lt.format(java.time.format.DateTimeFormatter.ofPattern("h:mm a"));
+        } catch (Exception e) {
+            return time;
+        }
+    }
 }
