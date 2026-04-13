@@ -33,7 +33,9 @@ public class Enums {
         CANCELLED("Cancelled"),
         BOOKED("Booked"),
         RESCHEDULED("Rescheduled"),
-        NO_SHOW("No Show");
+        NO_SHOW("No Show"),
+        ARRIVED("Arrived"),
+        WALK_IN("Walk-in");
 
         private final String value;
 

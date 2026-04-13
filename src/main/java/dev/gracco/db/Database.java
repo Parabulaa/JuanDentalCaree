@@ -627,10 +627,10 @@ public class Database {
                     SELECT
                         SUM(CASE WHEN scheduled_date = CURDATE() THEN 1 ELSE 0 END) AS today,
                         SUM(CASE WHEN scheduled_date = CURDATE() AND status_id = 'Confirmed' THEN 1 ELSE 0 END) AS completed,
-                        SUM(CASE WHEN scheduled_date = CURDATE() AND status_id IN ('Booked','Rescheduled') THEN 1 ELSE 0 END) AS remaining,
+                        SUM(CASE WHEN scheduled_date = CURDATE() AND status_id IN ('Booked','Rescheduled','Arrived') THEN 1 ELSE 0 END) AS remaining,
                         SUM(CASE WHEN scheduled_date = DATE_ADD(CURDATE(), INTERVAL 1 DAY) THEN 1 ELSE 0 END) AS tomorrow,
                         SUM(CASE WHEN scheduled_date = CURDATE() AND status_id = 'Cancelled' THEN 1 ELSE 0 END) AS cancelled,
-                        SUM(CASE WHEN scheduled_date = CURDATE() AND status_id = 'No Show' THEN 1 ELSE 0 END) AS noshow
+                        SUM(CASE WHEN scheduled_date = CURDATE() AND status_id = 'Walk-in' THEN 1 ELSE 0 END) AS walkin
                     FROM appointments
                     """;
             try (PreparedStatement st = connection.prepareStatement(sql);
@@ -638,7 +638,7 @@ public class Database {
                 if (rs.next()) {
                     return new int[]{
                             rs.getInt("today"), rs.getInt("completed"), rs.getInt("remaining"),
-                            rs.getInt("tomorrow"), rs.getInt("cancelled"), rs.getInt("noshow")
+                            rs.getInt("tomorrow"), rs.getInt("cancelled"), rs.getInt("walkin")
                     };
                 }
             } catch (SQLException e) {
@@ -793,10 +793,10 @@ public class Database {
                     SELECT
                         COUNT(*) AS today,
                         SUM(CASE WHEN status_id = 'Confirmed' THEN 1 ELSE 0 END) AS completed,
-                        SUM(CASE WHEN status_id IN ('Booked','Rescheduled') THEN 1 ELSE 0 END) AS remaining,
+                        SUM(CASE WHEN status_id IN ('Booked','Rescheduled','Arrived') THEN 1 ELSE 0 END) AS remaining,
                         0 AS tomorrow,
                         SUM(CASE WHEN status_id = 'Cancelled' THEN 1 ELSE 0 END) AS cancelled,
-                        SUM(CASE WHEN status_id = 'No Show' THEN 1 ELSE 0 END) AS noshow
+                        SUM(CASE WHEN status_id = 'Walk-in' THEN 1 ELSE 0 END) AS walkin
                     FROM appointments WHERE scheduled_date = ?
                     """;
             try (PreparedStatement st = connection.prepareStatement(sql)) {
@@ -805,7 +805,7 @@ public class Database {
                     if (rs.next()) {
                         return new int[]{
                                 rs.getInt("today"), rs.getInt("completed"), rs.getInt("remaining"),
-                                0, rs.getInt("cancelled"), rs.getInt("noshow")
+                                0, rs.getInt("cancelled"), rs.getInt("walkin")
                         };
                     }
                 }
@@ -813,6 +813,20 @@ public class Database {
                 Alert.fatalError(e.getMessage());
             }
             return new int[]{0, 0, 0, 0, 0, 0};
+        }
+
+        public static int getDentistAppointmentCount(int dentistUserId, java.sql.Date date) {
+            String sql = "SELECT COUNT(*) FROM appointments WHERE dentist_user_id=? AND scheduled_date=?";
+            try (PreparedStatement st = connection.prepareStatement(sql)) {
+                st.setInt(1, dentistUserId);
+                st.setDate(2, date);
+                try (ResultSet rs = st.executeQuery()) {
+                    if (rs.next()) return rs.getInt(1);
+                }
+            } catch (SQLException e) {
+                Alert.fatalError(e.getMessage());
+            }
+            return 0;
         }
 
         public static Object[][] getDentists() {

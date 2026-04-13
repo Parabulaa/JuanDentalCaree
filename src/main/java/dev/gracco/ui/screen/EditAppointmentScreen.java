@@ -173,6 +173,11 @@ public class EditAppointmentScreen extends JFrame {
                 saveButton.setEnabled(true); return;
             }
 
+            if (reason.length() < 3) {
+                Alert.error("Reason for visit must be at least 3 characters.", this);
+                saveButton.setEnabled(true); return;
+            }
+
             LocalDate parsedDate;
             try { parsedDate = LocalDate.parse(dateText, DATE_FORMATTER); }
             catch (Exception ex) { Alert.error("Date must follow MM/DD/YYYY.", this); saveButton.setEnabled(true); return; }

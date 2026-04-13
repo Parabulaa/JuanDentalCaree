@@ -85,7 +85,7 @@ public class AppointmentPanel extends JPanel {
         installDateMask(dateField);
         installPlaceholder(dateField, DATE_HINT);
 
-        statusBox = new JComboBox<>(new String[]{"", "Confirmed", "Cancelled", "Booked", "Rescheduled", "No Show"});
+        statusBox = new JComboBox<>(new String[]{"", "Confirmed", "Cancelled", "Booked", "Rescheduled", "No Show", "Arrived", "Walk-in"});
         statusBox.setFont(Theme.getFont(FontType.REGULAR, 14));
         statusBox.setBackground(Theme.WHITE);
         statusBox.setForeground(Theme.BLACK);

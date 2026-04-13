@@ -196,6 +196,18 @@ public class EditUserScreen extends JFrame {
                 return;
             }
 
+            if (!Validation.NAME_REGEX.matcher(firstName).matches()) {
+                Alert.error("First name must contain letters only and be at most 50 characters.", this);
+                saveButton.setEnabled(true);
+                return;
+            }
+
+            if (!Validation.NAME_REGEX.matcher(lastName).matches()) {
+                Alert.error("Last name must contain letters only and be at most 50 characters.", this);
+                saveButton.setEnabled(true);
+                return;
+            }
+
             String passwordToSave = password;
 
             String result = Database.Admin.updateUser(

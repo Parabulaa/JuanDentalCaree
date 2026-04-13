@@ -58,6 +58,8 @@ public class MainScreen extends JFrame {
     private JButton logsButton;
 
     private DashboardPanel dashboardPanel;
+    private JPanel avatarUserInfo;
+    private JLabel avatarLabel;
 
     private boolean sidebarExpanded = true;
     private String selectedPanel = "Dashboard";
@@ -162,7 +164,7 @@ public class MainScreen extends JFrame {
         avatarPanel.setCursor(new Cursor(Cursor.HAND_CURSOR));
 
         // Circular avatar label
-        JLabel avatarLabel = new JLabel() {
+        avatarLabel = new JLabel() {
             @Override protected void paintComponent(java.awt.Graphics g) {
                 java.awt.Graphics2D g2 = (java.awt.Graphics2D) g.create();
                 g2.setRenderingHint(java.awt.RenderingHints.KEY_ANTIALIASING,
@@ -206,9 +208,9 @@ public class MainScreen extends JFrame {
             } catch (Exception ignored) {}
         }
 
-        JPanel userInfo = new JPanel();
-        userInfo.setLayout(new BoxLayout(userInfo, BoxLayout.Y_AXIS));
-        userInfo.setBackground(Theme.WHITE);
+        avatarUserInfo = new JPanel();
+        avatarUserInfo.setLayout(new BoxLayout(avatarUserInfo, BoxLayout.Y_AXIS));
+        avatarUserInfo.setBackground(Theme.WHITE);
 
         JLabel nameLabel = new JLabel(Database.User.getFirstName() + " " + Database.User.getLastName());
         nameLabel.setFont(Theme.getFont(Theme.FontType.MEDIUM, 13f));
@@ -218,11 +220,11 @@ public class MainScreen extends JFrame {
         roleLabel.setFont(Theme.getFont(Theme.FontType.REGULAR, 12f));
         roleLabel.setForeground(Color.GRAY);
 
-        userInfo.add(nameLabel);
-        userInfo.add(roleLabel);
+        avatarUserInfo.add(nameLabel);
+        avatarUserInfo.add(roleLabel);
 
         avatarPanel.add(avatarLabel, BorderLayout.WEST);
-        avatarPanel.add(userInfo, BorderLayout.CENTER);
+        avatarPanel.add(avatarUserInfo, BorderLayout.CENTER);
 
         // Click avatar to change picture
         avatarPanel.addMouseListener(new MouseAdapter() {
@@ -243,8 +245,8 @@ public class MainScreen extends JFrame {
                     avatarLabel.repaint();
                 });
             }
-            @Override public void mouseEntered(MouseEvent e) { avatarPanel.setBackground(Theme.HIGHLIGHT); userInfo.setBackground(Theme.HIGHLIGHT); }
-            @Override public void mouseExited(MouseEvent e) { avatarPanel.setBackground(Theme.WHITE); userInfo.setBackground(Theme.WHITE); }
+            @Override public void mouseEntered(MouseEvent e) { avatarPanel.setBackground(Theme.HIGHLIGHT); avatarUserInfo.setBackground(Theme.HIGHLIGHT); }
+            @Override public void mouseExited(MouseEvent e) { avatarPanel.setBackground(Theme.WHITE); avatarUserInfo.setBackground(Theme.WHITE); }
         });
 
         JButton logoutButton = new JButton("Logout");
@@ -367,6 +369,17 @@ public class MainScreen extends JFrame {
     }
 
     private void updateSidebarSelection() {
+        boolean showText = sidebar.getPreferredSize().width > 180;
+
+        // Hide avatar text info when collapsed
+        if (avatarUserInfo != null) avatarUserInfo.setVisible(showText);
+        if (avatarLabel != null) {
+            int size = showText ? 40 : 36;
+            avatarLabel.setPreferredSize(new Dimension(size, size));
+            avatarLabel.setMinimumSize(new Dimension(size, size));
+            avatarLabel.setMaximumSize(new Dimension(size, size));
+        }
+
         styleSidebarButton(dashboardButton, selectedPanel.equals("Dashboard"), "Dashboard",
                 Theme.getDashboardColor(), Theme.getDashboardWhite());
         styleSidebarButton(appointmentButton, selectedPanel.equals("Appointments"), "Appointments",

@@ -165,6 +165,18 @@ public class AddUserScreen extends JFrame {
                 return;
             }
 
+            if (!Validation.NAME_REGEX.matcher(firstName).matches()) {
+                Alert.error("First name must contain letters only and be at most 50 characters.", this);
+                enterButton.setEnabled(true);
+                return;
+            }
+
+            if (!Validation.NAME_REGEX.matcher(lastName).matches()) {
+                Alert.error("Last name must contain letters only and be at most 50 characters.", this);
+                enterButton.setEnabled(true);
+                return;
+            }
+
             String result = Database.Admin.addUser(username, password, role, firstName, lastName, email, contactNumber);
 
             if (result != null) {

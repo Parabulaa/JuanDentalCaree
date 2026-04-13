@@ -96,6 +96,37 @@ public class AddAppointmentScreen extends JFrame {
 
         JTextField reasonField = createTextField(fieldSize);
 
+        // Dentist availability indicator
+        JLabel availLabel = new JLabel(" ");
+        availLabel.setFont(Theme.getFont(Theme.FontType.REGULAR, 12));
+        availLabel.setAlignmentX(Component.LEFT_ALIGNMENT);
+
+        Runnable updateAvail = () -> {
+            if (dentists.length == 0) return;
+            String dateText = getActualText(dateField).trim();
+            int dId = dentistIds[dentistBox.getSelectedIndex()];
+            try {
+                java.time.LocalDate d = java.time.LocalDate.parse(dateText, DATE_FORMATTER);
+                int count = Database.Appointment.getDentistAppointmentCount(dId, java.sql.Date.valueOf(d));
+                if (count == 0) {
+                    availLabel.setText("✓ Dentist is free on this date");
+                    availLabel.setForeground(new java.awt.Color(46, 125, 50));
+                } else {
+                    availLabel.setText("⚠ Dentist has " + count + " appointment(s) on this date");
+                    availLabel.setForeground(new java.awt.Color(200, 100, 0));
+                }
+            } catch (Exception ex) {
+                availLabel.setText(" ");
+            }
+        };
+
+        dentistBox.addActionListener(e -> updateAvail.run());
+        dateField.getDocument().addDocumentListener(new javax.swing.event.DocumentListener() {
+            public void insertUpdate(javax.swing.event.DocumentEvent e) { updateAvail.run(); }
+            public void removeUpdate(javax.swing.event.DocumentEvent e) { updateAvail.run(); }
+            public void changedUpdate(javax.swing.event.DocumentEvent e) { updateAvail.run(); }
+        });
+
         JTextArea notesArea = new JTextArea(3, 20);
         notesArea.setFont(Theme.getFont(Theme.FontType.REGULAR, 14));
         notesArea.setLineWrap(true);
@@ -133,6 +164,11 @@ public class AddAppointmentScreen extends JFrame {
 
             if (dateText.isEmpty() || timeText.isEmpty() || reason.isEmpty()) {
                 Alert.error("Date, time, and reason are required.", this);
+                addButton.setEnabled(true); return;
+            }
+
+            if (reason.length() < 3) {
+                Alert.error("Reason for visit must be at least 3 characters.", this);
                 addButton.setEnabled(true); return;
             }
 
@@ -192,6 +228,8 @@ public class AddAppointmentScreen extends JFrame {
         card.add(formPanel);
         card.add(Box.createVerticalStrut(18));
         card.add(notesRow);
+        card.add(Box.createVerticalStrut(6));
+        card.add(availLabel);
 
         root.add(card);
         setContentPane(root);

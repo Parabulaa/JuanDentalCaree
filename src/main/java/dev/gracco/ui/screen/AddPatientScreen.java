@@ -159,6 +159,24 @@ public class AddPatientScreen extends JFrame {
                 return;
             }
 
+            if (!Validation.NAME_REGEX.matcher(firstName).matches()) {
+                Alert.error("First name must contain letters only and be at most 50 characters.", this);
+                enterButton.setEnabled(true);
+                return;
+            }
+
+            if (!Validation.NAME_REGEX.matcher(lastName).matches()) {
+                Alert.error("Last name must contain letters only and be at most 50 characters.", this);
+                enterButton.setEnabled(true);
+                return;
+            }
+
+            if (address.length() < 5) {
+                Alert.error("Address must be at least 5 characters.", this);
+                enterButton.setEnabled(true);
+                return;
+            }
+
             if (!Validation.EMAIL_REGEX.matcher(email).matches()) {
                 Alert.error("Invalid email! Change the email and try again.", this);
                 enterButton.setEnabled(true);

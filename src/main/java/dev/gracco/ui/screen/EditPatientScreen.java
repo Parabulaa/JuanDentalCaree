@@ -154,8 +154,22 @@ public class EditPatientScreen extends JFrame {
             try { parsedDate = LocalDate.parse(birthDateText, DATE_FORMATTER); }
             catch (Exception ex) { Alert.error("Birth date must follow MM/DD/YYYY.", this); saveButton.setEnabled(true); return; }
 
+            if (!Validation.NAME_REGEX.matcher(firstName).matches()) {
+                Alert.error("First name must contain letters only and be at most 50 characters.", this);
+                saveButton.setEnabled(true); return;
+            }
+
+            if (!Validation.NAME_REGEX.matcher(lastName).matches()) {
+                Alert.error("Last name must contain letters only and be at most 50 characters.", this);
+                saveButton.setEnabled(true); return;
+            }
+
+            if (address.length() < 5) {
+                Alert.error("Address must be at least 5 characters.", this);
+                saveButton.setEnabled(true); return;
+            }
+
             if (!Validation.EMAIL_REGEX.matcher(email).matches()) {
-                Alert.error("Invalid email.", this); saveButton.setEnabled(true); return;
             }
             if (!Validation.PHONE_NUMBER_REGEX.matcher(contactNumber).matches()) {
                 Alert.error("Phone number must be valid.", this); saveButton.setEnabled(true); return;
