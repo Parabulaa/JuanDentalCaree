@@ -7,6 +7,7 @@ import java.awt.Color;
 import java.awt.Component;
 import java.awt.Cursor;
 import java.awt.Dimension;
+import java.awt.GridBagLayout;
 import java.awt.Toolkit;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
@@ -16,7 +17,6 @@ import javax.swing.Box;
 import javax.swing.BoxLayout;
 import javax.swing.Icon;
 import javax.swing.JButton;
-import javax.swing.JFileChooser;
 import javax.swing.JFrame;
 import javax.swing.JLabel;
 import javax.swing.JOptionPane;
@@ -35,8 +35,6 @@ import dev.gracco.ui.panels.AppointmentPanel;
 import dev.gracco.ui.panels.DashboardPanel;
 import dev.gracco.ui.panels.LogsPanel;
 import dev.gracco.ui.panels.PatientPanel;
-import dev.gracco.ui.screen.LoginScreen;
-import dev.gracco.ui.screen.ProfilePictureScreen;
 
 public class MainScreen extends JFrame {
     private static final int EXPANDED_SIDEBAR_WIDTH = 320;
@@ -172,12 +170,15 @@ public class MainScreen extends JFrame {
         JPanel sidebarBottom = new JPanel(new BorderLayout());
         sidebarBottom.setBackground(Theme.WHITE);
 
-        // Avatar panel
-        JPanel avatarPanel = new JPanel(new BorderLayout(10, 0));
+        // Avatar panel — centered layout
+        JPanel avatarPanel = new JPanel(new BorderLayout(12, 0));
         avatarPanel.setBackground(Theme.WHITE);
-        avatarPanel.setBorder(BorderFactory.createEmptyBorder(8, 14, 8, 14));
-        avatarPanel.setMaximumSize(new Dimension(Integer.MAX_VALUE, 64));
+        avatarPanel.setBorder(BorderFactory.createEmptyBorder(10, 14, 10, 14));
         avatarPanel.setCursor(new Cursor(Cursor.HAND_CURSOR));
+
+        // Wrap avatar in a panel to vertically center it
+        JPanel avatarWrapper = new JPanel(new GridBagLayout());
+        avatarWrapper.setBackground(Theme.WHITE);
 
         // Circular avatar label
         avatarLabel = new JLabel() {
@@ -199,7 +200,7 @@ public class MainScreen extends JFrame {
                     g2.drawImage(img, 0, 0, null);
                 } else {
                     g2.setColor(Theme.WHITE);
-                    g2.setFont(Theme.getFont(Theme.FontType.SEMI_BOLD, 18f));
+                    g2.setFont(Theme.getFont(Theme.FontType.SEMI_BOLD, 20f));
                     java.awt.FontMetrics fm = g2.getFontMetrics();
                     String initials = Database.User.getFirstName().isEmpty() ? "?" :
                             String.valueOf(Database.User.getFirstName().charAt(0)).toUpperCase();
@@ -210,9 +211,10 @@ public class MainScreen extends JFrame {
                 g2.dispose();
             }
         };
-        avatarLabel.setPreferredSize(new Dimension(40, 40));
-        avatarLabel.setMinimumSize(new Dimension(40, 40));
-        avatarLabel.setMaximumSize(new Dimension(40, 40));
+        avatarLabel.setPreferredSize(new Dimension(48, 48));
+        avatarLabel.setMinimumSize(new Dimension(48, 48));
+        avatarLabel.setMaximumSize(new Dimension(48, 48));
+        avatarWrapper.add(avatarLabel);
 
         // Load existing profile pic
         String picPath = Database.User.getProfilePicture();
@@ -239,7 +241,7 @@ public class MainScreen extends JFrame {
         avatarUserInfo.add(nameLabel);
         avatarUserInfo.add(roleLabel);
 
-        avatarPanel.add(avatarLabel, BorderLayout.WEST);
+        avatarPanel.add(avatarWrapper, BorderLayout.WEST);
         avatarPanel.add(avatarUserInfo, BorderLayout.CENTER);
 
         // Click avatar to change picture
@@ -390,13 +392,14 @@ public class MainScreen extends JFrame {
     private void updateSidebarSelection() {
         boolean showText = sidebar.getPreferredSize().width > 180;
 
-        // Hide avatar text info when collapsed
+        // Hide avatar text info when collapsed, center avatar
         if (avatarUserInfo != null) avatarUserInfo.setVisible(showText);
         if (avatarLabel != null) {
-            int size = showText ? 40 : 36;
+            int size = showText ? 48 : 52;
             avatarLabel.setPreferredSize(new Dimension(size, size));
             avatarLabel.setMinimumSize(new Dimension(size, size));
             avatarLabel.setMaximumSize(new Dimension(size, size));
+            avatarLabel.repaint();
         }
 
         styleSidebarButton(dashboardButton, selectedPanel.equals("Dashboard"), "Dashboard",

@@ -192,16 +192,24 @@ public class DashboardPanel extends JPanel {
                 new javax.swing.border.EmptyBorder(6, 10, 6, 10)));
         dateFilterField.setText(java.time.LocalDate.now().format(displayFmt));
 
-        // Calendar icon button
+        // Calendar icon button — styled to match system
         JButton calBtn = new JButton("📅");
-        calBtn.setFont(new java.awt.Font("Segoe UI Emoji", java.awt.Font.PLAIN, 14));
-        calBtn.setContentAreaFilled(false);
+        calBtn.setFont(new java.awt.Font("Segoe UI Emoji", java.awt.Font.PLAIN, 16));
+        calBtn.setBackground(Theme.SECONDARY);
+        calBtn.setForeground(Theme.WHITE);
+        calBtn.setContentAreaFilled(true);
+        calBtn.setOpaque(true);
         calBtn.setBorderPainted(false);
         calBtn.setFocusPainted(false);
         calBtn.setCursor(new java.awt.Cursor(java.awt.Cursor.HAND_CURSOR));
-        calBtn.setPreferredSize(new Dimension(36, 36));
-        calBtn.setMaximumSize(new Dimension(36, 36));
+        calBtn.setPreferredSize(new Dimension(40, 36));
+        calBtn.setMaximumSize(new Dimension(40, 36));
+        calBtn.setMargin(new java.awt.Insets(0, 0, 0, 0));
         calBtn.setToolTipText("Pick a date");
+        calBtn.addMouseListener(new java.awt.event.MouseAdapter() {
+            public void mouseEntered(java.awt.event.MouseEvent e) { calBtn.setBackground(Theme.PRIMARY); }
+            public void mouseExited(java.awt.event.MouseEvent e) { calBtn.setBackground(Theme.SECONDARY); }
+        });
         calBtn.addActionListener(e -> {
             java.time.LocalDate current;
             try {
