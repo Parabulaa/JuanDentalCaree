@@ -223,18 +223,18 @@ public class DashboardPanel extends JPanel {
             });
         });
 
-        JRoundedButton filterBtn = new JRoundedButton("Filter", 10);
-        filterBtn.setBackground(Theme.ACCENT);
-        filterBtn.setForeground(Theme.WHITE);
-        filterBtn.setFocusPainted(false);
-        filterBtn.setFont(Theme.getFont(FontType.SEMI_BOLD, 13));
-        filterBtn.setBorder(new javax.swing.border.EmptyBorder(8, 14, 8, 14));
-        filterBtn.setCursor(new java.awt.Cursor(java.awt.Cursor.HAND_CURSOR));
-        filterBtn.addMouseListener(new java.awt.event.MouseAdapter() {
-            public void mouseEntered(java.awt.event.MouseEvent e) { filterBtn.setBackground(Theme.ACCENT_HOVER); }
-            public void mouseExited(java.awt.event.MouseEvent e) { filterBtn.setBackground(Theme.ACCENT); }
+        JRoundedButton refreshBtn = new JRoundedButton("Refresh", 10);
+        refreshBtn.setBackground(Theme.ACCENT);
+        refreshBtn.setForeground(Theme.WHITE);
+        refreshBtn.setFocusPainted(false);
+        refreshBtn.setFont(Theme.getFont(FontType.SEMI_BOLD, 13));
+        refreshBtn.setBorder(new javax.swing.border.EmptyBorder(8, 14, 8, 14));
+        refreshBtn.setCursor(new java.awt.Cursor(java.awt.Cursor.HAND_CURSOR));
+        refreshBtn.addMouseListener(new java.awt.event.MouseAdapter() {
+            public void mouseEntered(java.awt.event.MouseEvent e) { refreshBtn.setBackground(Theme.ACCENT_HOVER); }
+            public void mouseExited(java.awt.event.MouseEvent e) { refreshBtn.setBackground(Theme.ACCENT); }
         });
-        filterBtn.addActionListener(e -> {
+        refreshBtn.addActionListener(e -> {
             try {
                 java.time.LocalDate d = java.time.LocalDate.parse(dateFilterField.getText().trim(), displayFmt);
                 loadDashboardDataByDate(java.sql.Date.valueOf(d));
@@ -259,7 +259,7 @@ public class DashboardPanel extends JPanel {
         dateFilterPanel.add(Box.createHorizontalStrut(2));
         dateFilterPanel.add(calBtn);
         dateFilterPanel.add(Box.createHorizontalStrut(6));
-        dateFilterPanel.add(filterBtn);
+        dateFilterPanel.add(refreshBtn);
         dateFilterPanel.add(Box.createHorizontalStrut(6));
         dateFilterPanel.add(todayBtn);
 
@@ -413,25 +413,7 @@ public class DashboardPanel extends JPanel {
         titleLabel.setForeground(Theme.BLACK);
         titleLabel.setFont(Theme.getFont(FontType.MEDIUM, 16f));
 
-        JRoundedButton refreshButton = new JRoundedButton("Refresh", 10);
-        refreshButton.setBackground(Theme.ACCENT);
-        refreshButton.setForeground(Theme.WHITE);
-        refreshButton.setFocusPainted(false);
-        refreshButton.setFont(Theme.getFont(FontType.SEMI_BOLD, 14));
-        refreshButton.setBorder(new javax.swing.border.EmptyBorder(10, 18, 10, 18));
-        refreshButton.setCursor(new java.awt.Cursor(java.awt.Cursor.HAND_CURSOR));
-        refreshButton.addMouseListener(new java.awt.event.MouseAdapter() {
-            public void mouseEntered(java.awt.event.MouseEvent e) { refreshButton.setBackground(Theme.ACCENT_HOVER); }
-            public void mouseExited(java.awt.event.MouseEvent e) { refreshButton.setBackground(Theme.ACCENT); }
-        });
-        refreshButton.addActionListener(e -> loadDashboardData());
-
-        JPanel cardHeader = new JPanel(new BorderLayout());
-        cardHeader.setBackground(Theme.WHITE);
-        cardHeader.add(titleLabel, BorderLayout.WEST);
-        cardHeader.add(refreshButton, BorderLayout.EAST);
-
-        tableCard.add(cardHeader, BorderLayout.NORTH);
+        tableCard.add(titleLabel, BorderLayout.NORTH);
         tableCard.add(scrollPane, BorderLayout.CENTER);
 
         return tableCard;

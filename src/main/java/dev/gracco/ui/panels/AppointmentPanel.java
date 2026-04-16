@@ -59,7 +59,7 @@ public class AppointmentPanel extends JPanel {
     private static final DateTimeFormatter INPUT_DATE_FORMATTER =
             DateTimeFormatter.ofPattern("MM/dd/uuuu").withResolverStyle(ResolverStyle.STRICT);
     private static final String[] TABLE_COLUMNS = {
-            "ID", "Patient", "Dentist", "Date", "Time", "Status", "Reason", "Notes"
+            "ID_Appointment", "Patient", "Dentist", "Date", "Time", "Status", "Reason", "Notes"
     };
 
     private final DefaultTableModel tableModel;
