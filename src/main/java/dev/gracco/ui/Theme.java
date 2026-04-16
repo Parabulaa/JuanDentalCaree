@@ -1,16 +1,18 @@
 package dev.gracco.ui;
 
-import lombok.Getter;
-import org.apache.batik.transcoder.TranscoderInput;
-import org.apache.batik.transcoder.image.ImageTranscoder;
-
-import javax.swing.ImageIcon;
 import java.awt.Color;
 import java.awt.Font;
 import java.awt.image.BufferedImage;
 import java.io.InputStream;
 import java.util.EnumMap;
 import java.util.Map;
+
+import javax.swing.ImageIcon;
+
+import org.apache.batik.transcoder.TranscoderInput;
+import org.apache.batik.transcoder.image.ImageTranscoder;
+
+import lombok.Getter;
 
 public class Theme {
     public enum FontType {
@@ -67,6 +69,9 @@ public class Theme {
     @Getter private static ImageIcon patientColor;
     @Getter private static ImageIcon sidebarOpen;
     @Getter private static ImageIcon sidebarClose;
+    @Getter private static ImageIcon navbarLogo;
+    @Getter private static ImageIcon loginLogo;
+    @Getter private static java.awt.Image windowIcon;
 
     //Fonts
     private static final Map<FontType, Font> FONT_CACHE = new EnumMap<>(FontType.class);
@@ -78,6 +83,10 @@ public class Theme {
             return new Font("SansSerif", Font.PLAIN, (int) size);
         }
         return base.deriveFont(size);
+    }
+
+    public static void applyWindowIcon(javax.swing.JFrame frame) {
+        if (windowIcon != null) frame.setIconImage(windowIcon);
     }
 
     // Images
@@ -149,6 +158,30 @@ public class Theme {
         patientColor = loadSvgImage("svg/patient_color.svg", 30, 30);
         sidebarOpen = loadSvgImage("svg/sidebar_open.svg", 30, 30);
         sidebarClose = loadSvgImage("svg/sidebar_close.svg", 30, 30);
+
+        // Business logos
+        try {
+            java.io.InputStream navStream = Theme.class.getResourceAsStream("/svg/navbar logo.jpg");
+            if (navStream != null) {
+                java.awt.Image navImg = javax.imageio.ImageIO.read(navStream);
+                navbarLogo = new ImageIcon(navImg.getScaledInstance(36, 36, java.awt.Image.SCALE_SMOOTH));
+            }
+        } catch (Exception e) { /* silently ignore */ }
+
+        try {
+            java.io.InputStream loginStream = Theme.class.getResourceAsStream("/svg/login logo.jpg");
+            if (loginStream != null) {
+                java.awt.Image loginImg = javax.imageio.ImageIO.read(loginStream);
+                loginLogo = new ImageIcon(loginImg.getScaledInstance(90, 90, java.awt.Image.SCALE_SMOOTH));
+            }
+        } catch (Exception e) { /* silently ignore */ }
+
+        try {
+            java.io.InputStream icoStream = Theme.class.getResourceAsStream("/svg/navbar logo.jpg");
+            if (icoStream != null) {
+                windowIcon = javax.imageio.ImageIO.read(icoStream);
+            }
+        } catch (Exception e) { /* silently ignore */ }
 
         initialized = true;
         return true;

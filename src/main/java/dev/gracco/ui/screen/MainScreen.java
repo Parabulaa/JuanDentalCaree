@@ -86,6 +86,7 @@ public class MainScreen extends JFrame {
         setLocationRelativeTo(null);
         setLayout(new BorderLayout());
         getContentPane().setBackground(Theme.WHITE);
+        Theme.applyWindowIcon(this);
 
         sidebar = new JPanel(new BorderLayout());
         sidebar.setBackground(Theme.BACKGROUND_GREEN);
@@ -101,6 +102,18 @@ public class MainScreen extends JFrame {
         titleLabel.setHorizontalAlignment(SwingConstants.LEFT);
         titleLabel.setFont(Theme.getFont(Theme.FontType.SEMI_BOLD, 24));
 
+        // Navbar logo
+        JLabel navLogoLabel = new JLabel();
+        if (Theme.getNavbarLogo() != null) {
+            navLogoLabel.setIcon(Theme.getNavbarLogo());
+        }
+        navLogoLabel.setBorder(BorderFactory.createEmptyBorder(0, 0, 0, 8));
+
+        JPanel titleWrapper = new JPanel(new java.awt.FlowLayout(java.awt.FlowLayout.LEFT, 0, 0));
+        titleWrapper.setBackground(Theme.WHITE);
+        titleWrapper.add(navLogoLabel);
+        titleWrapper.add(titleLabel);
+
         toggleButton = new JLabel(Theme.getSidebarClose());
         toggleButton.setCursor(new Cursor(Cursor.HAND_CURSOR));
         toggleButton.setHorizontalAlignment(SwingConstants.RIGHT);
@@ -114,7 +127,7 @@ public class MainScreen extends JFrame {
             }
         });
 
-        sidebarTop.add(titleLabel, BorderLayout.WEST);
+        sidebarTop.add(titleWrapper, BorderLayout.WEST);
         sidebarTop.add(toggleButton, BorderLayout.EAST);
 
         JPanel sidebarCenter = new JPanel();
@@ -301,6 +314,9 @@ public class MainScreen extends JFrame {
         add(contentPanel, BorderLayout.CENTER);
 
         showPanel("Dashboard");
+
+        // Maximize window on launch
+        setExtendedState(JFrame.MAXIMIZED_BOTH);
 
         // Session timeout — auto logout after 15 minutes of inactivity
         final int TIMEOUT_MS = 15 * 60 * 1000;

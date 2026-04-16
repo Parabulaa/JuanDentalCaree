@@ -1,11 +1,11 @@
 package dev.gracco.ui.screen;
 
-import dev.gracco.Main;
-import dev.gracco.db.Database;
-import dev.gracco.ui.Alert;
-import dev.gracco.ui.Theme;
-import dev.gracco.ui.element.JRoundedButton;
-import dev.gracco.ui.element.JRoundedPanel;
+import java.awt.Component;
+import java.awt.Cursor;
+import java.awt.Dimension;
+import java.awt.GridBagLayout;
+import java.awt.event.MouseAdapter;
+import java.awt.event.MouseEvent;
 
 import javax.swing.BorderFactory;
 import javax.swing.Box;
@@ -18,20 +18,22 @@ import javax.swing.JPasswordField;
 import javax.swing.JTextField;
 import javax.swing.SwingUtilities;
 import javax.swing.border.EmptyBorder;
-import java.awt.Component;
-import java.awt.Cursor;
-import java.awt.Dimension;
-import java.awt.GridBagLayout;
-import java.awt.event.MouseAdapter;
-import java.awt.event.MouseEvent;
+
+import dev.gracco.Main;
+import dev.gracco.db.Database;
+import dev.gracco.ui.Alert;
+import dev.gracco.ui.Theme;
+import dev.gracco.ui.element.JRoundedButton;
+import dev.gracco.ui.element.JRoundedPanel;
 
 public class LoginScreen extends JFrame {
     public LoginScreen() {
         setTitle("Login");
         setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
-        setSize(480, 580);
+        setSize(480, 680);
         setLocationRelativeTo(null);
         setResizable(false);
+        Theme.applyWindowIcon(this);
 
         JPanel root = new JPanel(new GridBagLayout());
         root.setBackground(Theme.BACKGROUND_GREEN);
@@ -40,7 +42,7 @@ public class LoginScreen extends JFrame {
         card.setBorder(new EmptyBorder(20, 30, 30, 30));
         card.setLayout(new BoxLayout(card, BoxLayout.Y_AXIS));
         card.setBackground(Theme.WHITE);
-        card.setPreferredSize(new Dimension(300, 360));
+        card.setPreferredSize(new Dimension(300, 460));
 
         Dimension fieldSize = new Dimension(240, 42);
 
@@ -128,6 +130,15 @@ public class LoginScreen extends JFrame {
         //    }).start();
         //});
 
+        // Business logo above title
+        JLabel logoLabel = new JLabel();
+        logoLabel.setAlignmentX(Component.CENTER_ALIGNMENT);
+        if (Theme.getLoginLogo() != null) {
+            logoLabel.setIcon(Theme.getLoginLogo());
+        }
+
+        card.add(logoLabel);
+        card.add(Box.createVerticalStrut(8));
         card.add(title);
         card.add(Box.createVerticalStrut(4));
         card.add(subtitle);
