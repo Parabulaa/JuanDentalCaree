@@ -472,12 +472,18 @@ public class Database {
         private static final int PAGE_SIZE = 10;
 
         public static Object[][] getAppointments(int page, Integer dentistFilter) {
-            return getAppointments(page, dentistFilter, "", "", "", "");
+            return getAppointments(page, dentistFilter, "", "", "", "", "");
         }
 
         public static Object[][] getAppointments(int page, Integer dentistFilter,
                                                   String patientName, String dentistName,
                                                   String date, String status) {
+            return getAppointments(page, dentistFilter, patientName, dentistName, date, status, "");
+        }
+
+        public static Object[][] getAppointments(int page, Integer dentistFilter,
+                                                  String patientName, String dentistName,
+                                                  String date, String status, String appointmentId) {
             if (page < 0) throw new IllegalArgumentException("Page cannot be negative");
 
             StringBuilder sql = new StringBuilder("""
@@ -510,6 +516,10 @@ public class Database {
             if (!status.isBlank()) {
                 sql.append(" AND a.status_id = ?");
                 params.add(status);
+            }
+            if (!appointmentId.isBlank()) {
+                sql.append(" AND CAST(a.appointment_id AS CHAR) LIKE ?");
+                params.add("%" + appointmentId + "%");
             }
             sql.append(" ORDER BY a.scheduled_date DESC, a.scheduled_time DESC LIMIT ? OFFSET ?");
             params.add(PAGE_SIZE);
@@ -724,6 +734,34 @@ public class Database {
                 Alert.fatalError(e.getMessage());
                 return false;
             }
+        }
+
+        public static Object[][] getPatientAppointmentNotes(int patientId, int dentistUserId) {
+            String sql = """
+                    SELECT a.appointment_id, a.scheduled_date, a.scheduled_time, a.reason_for_visit, a.notes
+                    FROM appointments a
+                    WHERE a.patient_id = ? AND a.dentist_user_id = ? AND a.notes IS NOT NULL AND a.notes != ''
+                    ORDER BY a.scheduled_date DESC, a.scheduled_time DESC
+                    """;
+            List<Object[]> rows = new ArrayList<>();
+            try (PreparedStatement st = connection.prepareStatement(sql)) {
+                st.setInt(1, patientId);
+                st.setInt(2, dentistUserId);
+                try (ResultSet rs = st.executeQuery()) {
+                    while (rs.next()) {
+                        rows.add(new Object[]{
+                                rs.getInt("appointment_id"),
+                                Validation.formatDate(rs.getDate("scheduled_date")),
+                                Validation.formatTime(rs.getString("scheduled_time")),
+                                rs.getString("reason_for_visit"),
+                                rs.getString("notes")
+                        });
+                    }
+                }
+            } catch (SQLException e) {
+                Alert.fatalError(e.getMessage());
+            }
+            return rows.toArray(new Object[0][]);
         }
 
         public static Object[][] getPatientAppointments(int patientId) {

@@ -146,8 +146,11 @@ public class MainScreen extends JFrame {
         sidebarCenter.add(dashboardButton);
         sidebarCenter.add(Box.createVerticalStrut(12));
         sidebarCenter.add(appointmentButton);
-        sidebarCenter.add(Box.createVerticalStrut(12));
-        sidebarCenter.add(patientButton);
+
+        if (Database.User.getRole() != Enums.Role.DENTIST) {
+            sidebarCenter.add(Box.createVerticalStrut(12));
+            sidebarCenter.add(patientButton);
+        }
 
         if (Database.User.getRole() == Enums.Role.ADMIN) {
             adminButton = createSidebarButton("Admin");

@@ -1,5 +1,45 @@
 package dev.gracco.ui.panels;
 
+import java.awt.BorderLayout;
+import java.awt.Color;
+import java.awt.Component;
+import java.awt.Cursor;
+import java.awt.Dimension;
+import java.awt.FlowLayout;
+import java.awt.GridLayout;
+import java.awt.Point;
+import java.awt.Window;
+import java.awt.event.ComponentAdapter;
+import java.awt.event.ComponentEvent;
+import java.awt.event.FocusAdapter;
+import java.awt.event.FocusEvent;
+import java.awt.event.MouseAdapter;
+import java.awt.event.MouseEvent;
+import java.time.LocalDate;
+import java.time.format.DateTimeFormatter;
+import java.time.format.ResolverStyle;
+
+import javax.swing.BorderFactory;
+import javax.swing.Box;
+import javax.swing.BoxLayout;
+import javax.swing.JComboBox;
+import javax.swing.JDialog;
+import javax.swing.JFrame;
+import javax.swing.JLabel;
+import javax.swing.JMenuItem;
+import javax.swing.JOptionPane;
+import javax.swing.JPanel;
+import javax.swing.JPopupMenu;
+import javax.swing.JScrollPane;
+import javax.swing.JTable;
+import javax.swing.JTextField;
+import javax.swing.SwingUtilities;
+import javax.swing.WindowConstants;
+import javax.swing.border.EmptyBorder;
+import javax.swing.table.DefaultTableCellRenderer;
+import javax.swing.table.DefaultTableModel;
+import javax.swing.table.JTableHeader;
+
 import dev.gracco.db.Database;
 import dev.gracco.db.Enums;
 import dev.gracco.ui.Theme;
@@ -10,18 +50,7 @@ import dev.gracco.ui.element.RoundedPanel;
 import dev.gracco.ui.screen.AddAppointmentScreen;
 import dev.gracco.ui.screen.AppointmentNoteScreen;
 import dev.gracco.ui.screen.EditAppointmentScreen;
-
-import javax.swing.*;
-import javax.swing.border.EmptyBorder;
-import javax.swing.table.DefaultTableCellRenderer;
-import javax.swing.table.DefaultTableModel;
-import javax.swing.table.JTableHeader;
-import java.awt.*;
-import java.awt.event.*;
-import java.time.LocalDate;
-import java.time.format.DateTimeFormatter;
-import java.time.format.ResolverStyle;
-
+import dev.gracco.ui.screen.PatientNotesScreen;
 import dev.gracco.util.ExportUtil;
 
 public class AppointmentPanel extends JPanel {
@@ -41,6 +70,7 @@ public class AppointmentPanel extends JPanel {
     private final JLabel pageLabel;
 
     // search fields
+    private final JTextField appointmentIdField;
     private final JTextField patientNameField;
     private final JTextField dentistNameField;
     private final JTextField dateField;
@@ -79,6 +109,7 @@ public class AppointmentPanel extends JPanel {
         previousButton.addActionListener(e -> { if (currentPage > 0) { currentPage--; loadPage(currentPage); } });
         nextButton.addActionListener(e -> { if (currentRowCount == PAGE_SIZE) { currentPage++; loadPage(currentPage); } });
 
+        appointmentIdField = createSearchTextField();
         patientNameField = createSearchTextField();
         dentistNameField = createSearchTextField();
         dateField = createSearchTextField();
@@ -190,7 +221,7 @@ public class AppointmentPanel extends JPanel {
         wrapper.setLayout(new BorderLayout(0, 12));
         wrapper.setBackground(Theme.WHITE);
         wrapper.setBorder(new EmptyBorder(16, 16, 16, 16));
-        wrapper.setPreferredSize(new Dimension(860, 220));
+        wrapper.setPreferredSize(new Dimension(1040, 220));
 
         JLabel title = new JLabel("Search Filters");
         title.setForeground(Theme.BLACK);
@@ -200,9 +231,10 @@ public class AppointmentPanel extends JPanel {
         fieldsPanel.setLayout(new BoxLayout(fieldsPanel, BoxLayout.Y_AXIS));
         fieldsPanel.setBackground(Theme.WHITE);
 
-        JPanel firstRow = new JPanel(new GridLayout(1, 4, 14, 0));
+        JPanel firstRow = new JPanel(new GridLayout(1, 5, 14, 0));
         firstRow.setBackground(Theme.WHITE);
         firstRow.setMaximumSize(new Dimension(Integer.MAX_VALUE, 72));
+        firstRow.add(createSearchFieldPanel("Appointment ID", appointmentIdField));
         firstRow.add(createSearchFieldPanel("Patient Name", patientNameField));
         firstRow.add(createSearchFieldPanel("Dentist Name", dentistNameField));
         firstRow.add(createSearchFieldPanel("Date", dateField));
@@ -229,6 +261,7 @@ public class AppointmentPanel extends JPanel {
         resetButton.setBorder(new EmptyBorder(10, 18, 10, 18));
         resetButton.setCursor(new Cursor(Cursor.HAND_CURSOR));
         resetButton.addActionListener(e -> {
+            appointmentIdField.setText("");
             patientNameField.setText("");
             dentistNameField.setText("");
             dateField.setForeground(Color.GRAY);
@@ -444,6 +477,41 @@ public class AppointmentPanel extends JPanel {
                 menu.addSeparator();
                 menu.add(noteItem);
 
+                // Dentist: view all notes for this patient
+                if (Database.User.getRole() == Enums.Role.DENTIST) {
+                    // get patient id from raw data — stored at index 8
+                    int patientId = -1;
+                    for (int i = 0; i < tableModel.getRowCount(); i++) {
+                        if ((int) tableModel.getValueAt(i, 0) == appointmentId) {
+                            // we need to reload from DB since we only store 8 visible cols
+                            break;
+                        }
+                    }
+                    JMenuItem viewNotesItem = new JMenuItem("View All My Notes for This Patient");
+                    viewNotesItem.setFont(Theme.getFont(FontType.REGULAR, 13f));
+                    final String pName = patientName;
+                    viewNotesItem.addActionListener(_ -> {
+                        Object[] appt = Database.Appointment.getAppointmentById(appointmentId);
+                        if (appt != null) {
+                            PatientNotesScreen.open((int) appt[1], pName);
+                        }
+                    });
+                    menu.add(viewNotesItem);
+                }
+
+                // Clerk: quick check-in button
+                if (Database.User.getRole() == Enums.Role.CLERK) {
+                    menu.addSeparator();
+                    JMenuItem checkInItem = new JMenuItem("✓ Check In Patient (Arrived)");
+                    checkInItem.setFont(Theme.getFont(FontType.SEMI_BOLD, 13f));
+                    checkInItem.setForeground(new Color(46, 125, 50));
+                    checkInItem.addActionListener(_ -> {
+                        Database.Appointment.updateStatus(appointmentId, "Arrived");
+                        loadPage(currentPage);
+                    });
+                    menu.add(checkInItem);
+                }
+
                 menu.show(table, e.getX(), e.getY());
             }
         });
@@ -459,7 +527,8 @@ public class AppointmentPanel extends JPanel {
                 patientNameField.getText().trim(),
                 dentistNameField.getText().trim(),
                 dateSearch,
-                statusSearch);
+                statusSearch,
+                appointmentIdField.getText().trim());
         tableModel.setRowCount(0);
         for (Object[] row : data) {
             tableModel.addRow(new Object[]{row[0], row[1], row[2], row[3], row[4], row[5], row[6], row[7]});
